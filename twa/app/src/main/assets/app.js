@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.7";
+const APP_VERSION = "1.0.8";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -642,10 +642,38 @@ function closeSheet() {
 }
 
 scrimEl.addEventListener("click", closeSheet);
+
+/* ------------------------- gestos: deslizar para cambiar de apartado ------------------------- */
+const VIEWS = ["goals", "history", "settings"];
+let touchX = 0, touchY = 0, swiping = false;
+
+document.addEventListener("touchstart", (e) => {
+  swiping = false;
+  if (e.touches.length !== 1) return;
+  // No cambiar de apartado si hay un diálogo o la bienvenida abierta.
+  if (sheetEl.classList.contains("open") || $("#welcome")) return;
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
+  swiping = true;
+}, { passive: true });
+
+document.addEventListener("touchend", (e) => {
+  if (!swiping || !e.changedTouches.length) return;
+  swiping = false;
+  const dx = e.changedTouches[0].clientX - touchX;
+  const dy = e.changedTouches[0].clientY - touchY;
+  // Solo si el gesto fue claramente horizontal (no un scroll vertical).
+  if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+  const current = VIEWS.indexOf(document.body.dataset.view || "goals");
+  if (current < 0) return;
+  // Deslizar a la derecha → apartado de la derecha; a la izquierda → el de la izquierda.
+  const next = dx > 0 ? current + 1 : current - 1;
+  if (next < 0 || next >= VIEWS.length) return;
+  switchView(VIEWS[next]);
+}, { passive: true });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && sheetEl.classList.contains("open")) closeSheet();
 });
-$("#fab").addEventListener("click", () => openNewGoal());
 
 /* ------------------------- nueva meta ------------------------- */
 function openNewGoal() {
@@ -861,8 +889,6 @@ function switchView(name) {
   $$(".view").forEach((v) => { v.hidden = v.id !== `view-${name}`; });
   $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === name));
   document.body.dataset.view = name;
-  const fab = $("#fab");
-  if (fab) fab.hidden = name !== "goals";
   if (name === "settings") renderSettings();
   placeIndicator();
   window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" });
@@ -979,6 +1005,7 @@ applyThemeMode(state.themeMode || "auto");
 applyDynamic(state.dynamicColor !== false);
 if ($("#ringToggle")) $("#ringToggle").setAttribute("aria-pressed", state.ringMode ? "true" : "false");
 if ($("#dynamicToggle")) $("#dynamicToggle").setAttribute("aria-pressed", state.dynamicColor !== false ? "true" : "false");
+document.body.dataset.view = "goals";
 render();
 startWave();
 requestAnimationFrame(placeIndicator);
