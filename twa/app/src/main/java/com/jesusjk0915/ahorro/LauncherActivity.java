@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInstaller;
 import android.content.res.Configuration;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -19,17 +20,16 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
-import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.io.File;
-
 public class LauncherActivity extends Activity {
+    public static final String ACTION_INSTALL_RESULT = "ahorro.INSTALL_RESULT";
+
     private WebView webView;
-    private long downloadId = -1;
     private BroadcastReceiver downloadReceiver;
     private int statusBarInset = -1;
     private boolean pageLoaded = false;
@@ -38,6 +38,23 @@ public class LauncherActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Receiver dinámico temprano (el estático del Manifest es el respaldo en segundo plano).
+        registerDownloadReceiver();
+
+        // Resultado del PackageInstaller.
+        Intent incoming = getIntent();
+        if (incoming != null && ACTION_INSTALL_RESULT.equals(incoming.getAction())) {
+            int status = incoming.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                    PackageInstaller.STATUS_FAILURE);
+            if (status == PackageInstaller.STATUS_SUCCESS) {
+                Toast.makeText(this, "Actualización instalada ✅", Toast.LENGTH_LONG).show();
+            } else {
+                String msg = incoming.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                Toast.makeText(this, "No se pudo instalar: " + (msg != null ? msg : ("error " + status)),
+                        Toast.LENGTH_LONG).show();
+            }
+        }
 
         boolean dark = isDark();
         getWindow().setBackgroundDrawable(new ColorDrawable(surfaceColor()));
@@ -175,7 +192,7 @@ public class LauncherActivity extends Activity {
         view.evaluateJavascript(js, null);
     }
 
-    /* ---------- actualización: descargar y abrir instalador ---------- */
+    /* ---------- actualización: descargar e instalar ---------- */
     private void startDownload(String url) {
         try {
             Uri source = Uri.parse(url);
@@ -188,31 +205,30 @@ public class LauncherActivity extends Activity {
             req.setDescription("Descargando la nueva versión…");
             req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ahorro-update.apk");
-            downloadId = dm.enqueue(req);
-
-            downloadReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context c, Intent intent) {
-                    long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                    if (id != downloadId) return;
-                    installApk(c);
-                    unregisterDownloadReceiver();
-                }
-            };
-            registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            long id = dm.enqueue(req);
+            // Guardar el ID para que el receiver (dinámico o del Manifest) sepa qué descarga instalar.
+            getSharedPreferences(Installer.PREFS, MODE_PRIVATE).edit()
+                    .putLong(Installer.KEY_ID, id).apply();
+            Toast.makeText(this, "Descargando actualización…", Toast.LENGTH_SHORT).show();
         } catch (Exception ignored) {
         }
     }
 
-    private void installApk(Context c) {
+    private void registerDownloadReceiver() {
         try {
-            File apk = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "ahorro-update.apk");
-            Uri uri = FileProvider.getUriForFile(c, c.getPackageName() + ".fileprovider", apk);
-            Intent install = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-            install.setData(uri);
-            install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            install.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            c.startActivity(install);
+            if (downloadReceiver != null) return;
+            downloadReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent intent) {
+                    Installer.handle(c, intent);
+                }
+            };
+            IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(downloadReceiver, filter, Context.RECEIVER_EXPORTED);
+            } else {
+                registerReceiver(downloadReceiver, filter);
+            }
         } catch (Exception ignored) {
         }
     }

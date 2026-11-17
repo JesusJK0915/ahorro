@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.3";
+const APP_VERSION = "1.0.4";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);

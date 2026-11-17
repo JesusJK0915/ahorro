@@ -23,6 +23,14 @@
                 android:resource="@xml/filepaths" />
         </provider>
 
+        <receiver
+            android:name=".InstallReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name="LauncherActivity"
             android:label="@string/launcherName"
