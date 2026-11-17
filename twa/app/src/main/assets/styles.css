@@ -88,7 +88,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 .app {
   max-width: 520px;
   margin-inline: auto;
-  padding: calc(14px + var(--sbh, 0px)) 16px calc(178px + env(safe-area-inset-bottom));
+  padding: var(--sbh, 0px) 16px calc(178px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   min-height: 100dvh;

@@ -21,7 +21,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.core.content.FileProvider;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.io.File;
 
@@ -29,6 +31,8 @@ public class LauncherActivity extends Activity {
     private WebView webView;
     private long downloadId = -1;
     private BroadcastReceiver downloadReceiver;
+    private int statusBarInset = -1;
+    private boolean pageLoaded = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -68,6 +72,7 @@ public class LauncherActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                pageLoaded = true;
                 injectTheme(view);
             }
         });
@@ -89,6 +94,17 @@ public class LauncherActivity extends Activity {
                 resultMsg.sendToTarget();
                 return true;
             }
+        });
+
+        // Capturar el alto EXACTO de la barra de estado que reporta el dispositivo
+        // (en HyperOS/MIUI puede diferir del resource "status_bar_height").
+        ViewCompat.setOnApplyWindowInsetsListener(webView, (v, insets) -> {
+            int top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+            if (top != statusBarInset) {
+                statusBarInset = top;
+                if (pageLoaded) injectTheme(webView);
+            }
+            return insets;
         });
 
         setContentView(webView);
@@ -123,9 +139,11 @@ public class LauncherActivity extends Activity {
     }
 
     private void injectTheme(WebView view) {
-        int sbh = 0;
-        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (id > 0) sbh = getResources().getDimensionPixelSize(id);
+        int sbh = statusBarInset;
+        if (sbh < 0) {
+            int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
+            if (id > 0) sbh = getResources().getDimensionPixelSize(id);
+        }
 
         boolean dark = isDark();
         String primary = hex(sysColor(dark ? "system_accent1_200" : "system_accent1_500", dark ? 0xFF7FD4D6 : 0xFF00696B));
