@@ -23,7 +23,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
