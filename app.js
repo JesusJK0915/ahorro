@@ -23,7 +23,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 const APP_VERSION = "1.0.0";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
-const UPDATE_URL = "https://TU-USUARIO.github.io/TU-REPO/version.json";
+const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
 const buzz = (ms = 12) => { try { navigator.vibrate?.(ms); } catch {} };
 
