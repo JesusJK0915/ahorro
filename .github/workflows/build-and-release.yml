@@ -1,0 +1,92 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Decode signing keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+
+      - name: Init TWA project from published PWA
+        env:
+          MANIFEST_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/manifest.webmanifest
+        run: |
+          mkdir -p twa && cd twa
+          bubblewrap init --manifest "$MANIFEST_URL" --directory . || true
+
+      - name: Build APK
+        env:
+          MANIFEST_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/manifest.webmanifest
+        run: |
+          cd twa
+          bubblewrap build \
+            --keystore ../keystore.jks \
+            --keystorePassword "${{ secrets.KEYSTORE_PASSWORD }}" \
+            --keyAlias "${{ secrets.KEY_ALIAS }}" \
+            --keyPassword "${{ secrets.KEY_PASSWORD }}" \
+            --output ../app-release.apk
+
+      - name: Read version from app.js
+        id: ver
+        run: |
+          V=$(grep -oP 'APP_VERSION = "\K[^"]+' app.js)
+          echo "version=$V" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: Ahorros v${{ steps.ver.outputs.version }}
+          files: app-release.apk
+          generate_release_notes: true
+
+      - name: Update version.json
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          APK_URL="https://github.com/${REPO}/releases/download/v${VERSION}/app-release.apk"
+          cat > version.json <<EOF
+          {
+            "version": "${VERSION}",
+            "url": "${APK_URL}",
+            "notes": "Nueva version ${VERSION}."
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add version.json
+          git commit -m "chore: bump version.json to ${VERSION}" || exit 0
+          git push
+
+      - name: Cleanup
+        if: always()
+        run: rm -f keystore.jks
