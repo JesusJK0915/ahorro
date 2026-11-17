@@ -63,7 +63,7 @@ jobs:
           cd twa
           printf 'n\n' | bubblewrap build \
             --signingKeyPath ../keystore.jks \
-            --signingKeyAlias "${{ secrets.KEY_ALIAS }}"
+            --signingKeyAlias "ahorros"
 
       - name: Read version from app.js
         id: ver
