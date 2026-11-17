@@ -60,7 +60,7 @@ jobs:
       - name: Build APK
         run: |
           cd twa
-          bubblewrap build \
+          printf 'n\nn\nn\n' | bubblewrap build \
             --keystore ../keystore.jks \
             --keystorePassword "${{ secrets.KEYSTORE_PASSWORD }}" \
             --keyAlias "${{ secrets.KEY_ALIAS }}" \
