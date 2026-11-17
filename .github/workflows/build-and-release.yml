@@ -71,12 +71,15 @@ jobs:
           V=$(grep -oP 'APP_VERSION = "\K[^"]+' app.js)
           echo "version=$V" >> $GITHUB_OUTPUT
 
+      - name: Verify APK exists
+        run: test -f twa/app-release-signed.apk
+
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.version }}
           name: Ahorros v${{ steps.ver.outputs.version }}
-          files: app-release-signed.apk
+          files: twa/app-release-signed.apk
           generate_release_notes: true
 
       - name: Update version.json
