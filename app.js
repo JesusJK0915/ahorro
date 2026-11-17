@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.4";
+const APP_VERSION = "1.0.5";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -760,6 +760,9 @@ function shake(el) {
 function switchView(name) {
   $$(".view").forEach((v) => { v.hidden = v.id !== `view-${name}`; });
   $$(".nav-item").forEach((b) => b.classList.toggle("is-active", b.dataset.view === name));
+  document.body.dataset.view = name;
+  const fab = $("#fab");
+  if (fab) fab.hidden = name !== "goals";
   if (name === "settings") renderSettings();
   placeIndicator();
   window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" });
