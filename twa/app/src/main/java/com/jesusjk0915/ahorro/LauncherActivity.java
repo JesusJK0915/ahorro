@@ -136,8 +136,8 @@ public class LauncherActivity extends Activity {
 
     /* ---------- Material You: colores del fondo de pantalla ---------- */
     private boolean isDark() {
-        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
-                == Configuration.UI_MODE_NIGHT_YES;
+        // Modo claro desactivado: la app siempre usa el esquema oscuro.
+        return true;
     }
 
     private int sysColor(String name, int fallback) {

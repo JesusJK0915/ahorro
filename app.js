@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.9";
+const APP_VERSION = "1.0.10";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -46,11 +46,11 @@ function defaults() {
   return {
     goals: [],
     moves: [],
-    theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
+    theme: "dark",
     ringMode: false,
     dynamicColor: true,
     currency: "COP",
-    themeMode: "auto",
+    themeMode: "dark",
   };
 }
 
@@ -67,7 +67,7 @@ function load() {
     if (typeof p.ringMode !== "boolean") p.ringMode = false;
     if (typeof p.dynamicColor !== "boolean") p.dynamicColor = true;
     if (!p.currency) p.currency = "COP";
-    if (!p.themeMode) p.themeMode = "auto";
+    p.themeMode = "dark";
     return p;
   } catch {
     return defaults();
@@ -77,31 +77,17 @@ function save() {
   try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {}
 }
 
-/* ------------------------- tema ------------------------- */
+/* ------------------------- tema (siempre oscuro) ------------------------- */
 function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  const tb = $("#themeBtn");
-  if (tb) tb.setAttribute("aria-label", t === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
-  const meta = document.querySelector('meta[name="theme-color"]:not([media])');
-  if (meta) meta.content = t === "dark" ? "#0d1313" : "#f5fafa";
-}
-function resolveTheme(mode) {
-  if (mode === "light") return "light";
-  if (mode === "dark") return "dark";
-  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  document.documentElement.dataset.theme = "dark";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = "#0d1313";
 }
 function applyThemeMode(mode) {
-  state.themeMode = mode;
-  const t = resolveTheme(mode);
-  state.theme = t;
+  state.themeMode = "dark";
+  state.theme = "dark";
   save();
-  applyTheme(t);
-}
-function toggleTheme() {
-  const cur = document.documentElement.dataset.theme;
-  const next = cur === "dark" ? "light" : "dark";
-  applyThemeMode(next);
-  buzz();
+  applyTheme("dark");
 }
 function applyDynamic(on) {
   document.documentElement.dataset.dynamic = on ? "true" : "false";
@@ -473,24 +459,9 @@ function compareVersions(a, b) {
 function renderSettings() {
   const list = $("#settingsList");
   if (!list) return;
-  const mode = state.themeMode || "auto";
   const cur = state.currency || "COP";
   const currencies = ["COP", "USD", "EUR", "MXN", "ARS", "CLP"];
   list.innerHTML = `
-    <li class="setting">
-      <span class="setting-icon">${icon("target")}</span>
-      <div class="setting-body">
-        <strong>Tema</strong>
-        <span>Claro, oscuro o automático según el sistema.</span>
-      </div>
-      <div class="setting-control">
-        <div class="seg" data-seg="theme">
-          <button data-val="auto" class="${mode === "auto" ? "is-active" : ""}">Auto</button>
-          <button data-val="light" class="${mode === "light" ? "is-active" : ""}">Claro</button>
-          <button data-val="dark" class="${mode === "dark" ? "is-active" : ""}">Oscuro</button>
-        </div>
-      </div>
-    </li>
     <li class="setting">
       <span class="setting-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -558,13 +529,6 @@ function renderSettings() {
     </li>
   `;
   // wire
-  list.querySelectorAll('[data-seg="theme"] button').forEach((b) =>
-    b.addEventListener("click", () => {
-      applyThemeMode(b.dataset.val);
-      renderSettings();
-      buzz();
-    })
-  );
   $("#setDynamic", list).addEventListener("click", () => {
     toggleDynamic();
     renderSettings();
@@ -1041,7 +1005,6 @@ function stopWave() { cancelAnimationFrame(waveRaf); waveRaf = 0; }
 reduceMotion.addEventListener("change", () => { if (reduceMotion.matches) stopWave(); else startWave(); });
 
 /* ------------------------- arranque ------------------------- */
-$("#themeBtn")?.addEventListener("click", toggleTheme);
 $("#dynamicToggle")?.addEventListener("click", toggleDynamic);
 $("#ringToggle")?.addEventListener("click", () => {
   state.ringMode = !state.ringMode;
