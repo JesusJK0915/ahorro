@@ -49,9 +49,6 @@ jobs:
 
       - name: Prepare TWA project
         run: |
-          mkdir -p twa
-          cp twa-manifest.json twa/twa-manifest.json
-          sha1sum twa/twa-manifest.json | awk '{print $1}' > twa/manifest-checksum.txt
           if [ ! -e "$ANDROID_HOME/bin" ]; then ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/bin"; fi
           if [ ! -e "$ANDROID_HOME/tools" ]; then ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/tools"; fi
           mkdir -p ~/.bubblewrap
