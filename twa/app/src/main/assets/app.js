@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.6";
+const APP_VERSION = "1.0.7";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -34,6 +34,7 @@ const SVG = {
   trash: '<path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   up: '<path d="M12 19V5"/><path d="M6 11l6-6 6 6"/>',
+  down: '<path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>',
   coin: '<ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7"/><path d="M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>',
 };
 const icon = (name, w = 20) =>
@@ -263,15 +264,22 @@ function buildGoal(g, i) {
     </div>
     <div class="goal-foot">
       <span class="rest"></span>
-      <button class="mini-btn press" data-add>${icon("plus", 15)}<span style="vertical-align:middle;margin-left:4px">Añadir</span></button>
+      <span class="goal-actions">
+        <button class="mini-btn mini-btn-out press" data-withdraw aria-label="Retirar dinero">${icon("down", 15)}</button>
+        <button class="mini-btn press" data-add>${icon("plus", 15)}<span style="vertical-align:middle;margin-left:4px">Añadir</span></button>
+      </span>
     </div>`;
   li.addEventListener("click", (e) => {
-    if (e.target.closest("[data-add]")) return;
+    if (e.target.closest("[data-add]") || e.target.closest("[data-withdraw]")) return;
     openDeposit(g.id);
   });
   li.querySelector("[data-add]").addEventListener("click", (e) => {
     e.stopPropagation();
     openDeposit(g.id);
+  });
+  li.querySelector("[data-withdraw]").addEventListener("click", (e) => {
+    e.stopPropagation();
+    openWithdraw(g.id);
   });
   let timer = 0;
   li.addEventListener("pointerdown", () => {
@@ -312,15 +320,18 @@ function renderHistory() {
   const list = $("#historyList");
   const moves = state.moves.slice(0, 60);
   $("#historyCount").textContent = moves.length ? `${state.moves.length} mov.` : "";
-  list.innerHTML = moves.map((m, i) => `
-    <li class="move" style="--i:${Math.min(i, 8)};--tint-raw:${m.tint || TINTS[0]}">
-      <span class="move-dot">${icon("up", 18)}</span>
+  list.innerHTML = moves.map((m, i) => {
+    const out = m.type === "withdraw";
+    return `
+    <li class="move ${out ? "move-out" : ""}" style="--i:${Math.min(i, 8)};--tint-raw:${m.tint || TINTS[0]}">
+      <span class="move-dot">${icon(out ? "down" : "up", 18)}</span>
       <div class="move-body">
-        <strong>${escapeHTML(m.name || "Aporte")}</strong>
+        <strong>${escapeHTML(m.name || (out ? "Retiro" : "Aporte"))}</strong>
         <span>${fmtDate(m.ts)}</span>
       </div>
-      <span class="move-amt">+${money(m.amount)}</span>
-    </li>`).join("");
+      <span class="move-amt">${out ? "-" : "+"}${money(m.amount)}</span>
+    </li>`;
+  }).join("");
   $("#emptyHistory").hidden = state.moves.length > 0;
   list.hidden = state.moves.length === 0;
 }
@@ -560,6 +571,27 @@ function addSaving(id, amount) {
   return pctOf(g) - before;
 }
 
+function withdrawSaving(id, amount) {
+  const g = state.goals.find((x) => x.id === id);
+  if (!g || !(amount > 0)) return 0;
+  const v = Math.min(amount, g.saved);
+  if (!(v > 0)) return 0;
+  const before = pctOf(g);
+  g.saved -= v;
+  state.moves.unshift({ id: uid(), goalId: g.id, name: g.name, amount: v, ts: Date.now(), tint: g.tint, type: "withdraw" });
+  if (state.moves.length > 200) state.moves.length = 200;
+  save();
+  render();
+  const el = $(`#goalList [data-id="${id}"]`);
+  bump($("#totalAmount"));
+  if (el) {
+    const r = el.getBoundingClientRect();
+    floatAmount(r.left + r.width / 2, r.top + 34, "-" + money(v));
+    buzz(15);
+  }
+  return before - pctOf(g);
+}
+
 function createGoal(name, target) {
   const tint = TINTS[state.goals.length % TINTS.length];
   const g = { id: uid(), name: name.trim().slice(0, 42), target, saved: 0, tint, ts: Date.now() };
@@ -720,6 +752,72 @@ function openDeposit(id) {
   });
 }
 
+/* ------------------------- retirar ------------------------- */
+function openWithdraw(id) {
+  const g = state.goals.find((x) => x.id === id);
+  if (!g) return;
+  if (!(g.saved > 0)) {
+    openSheet("Retirar dinero", "Esta meta todavía no tiene ahorros.", `
+      <div class="sheet-actions">
+        <button class="btn-filled press" data-close>Entendido</button>
+      </div>`);
+    return;
+  }
+  const p = pctOf(g);
+  openSheet(`Retirar de <em>${escapeHTML(g.name)}</em>`,
+    `Disponible: ${money(g.saved)}`, `
+    <div class="amount-wrap">
+      <span class="cur">$</span>
+      <input id="w-amt" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Monto a retirar" />
+    </div>
+    <div class="chips">
+      ${[50000, 100000, 500000].filter((v) => v <= g.saved).map((v) => `<button class="chip-btn press" data-add="${v}">${group(v)}</button>`).join("")}
+      <button class="chip-btn press" data-all="1">Todo</button>
+    </div>
+    <div class="goal-preview">
+      <div class="goal-preview-head"><span>Progreso nuevo</span><b id="w-pct">${Math.round(p)}%</b></div>
+      <div class="prog" id="w-prog" style="--p:${p};--tint-raw:${g.tint}">
+        <span class="prog-track"></span><span class="prog-fill"></span><span class="prog-stop"></span>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-tonal press" data-close>Cancelar</button>
+      <button class="btn-tonal press btn-danger" id="w-save">Retirar</button>
+    </div>`, (root, close) => {
+    const amt = $("#w-amt", root);
+    const prog = $("#w-prog", root);
+    const pctEl = $("#w-pct", root);
+    const preview = () => {
+      const v = Math.min(Number(digits(amt.value)) || 0, g.saved);
+      const np = g.target > 0 ? clamp(((g.saved - v) / g.target) * 100, 0, 100) : 0;
+      prog.style.setProperty("--p", np);
+      prog.dataset.on = np > 0 ? "true" : "false";
+      pctEl.textContent = Math.round(np) + "%";
+    };
+    const setVal = (v) => { amt.value = v > 0 ? group(v) : ""; preview(); };
+    amt.addEventListener("input", () => {
+      amt.value = digits(amt.value) ? group(digits(amt.value)) : "";
+      preview();
+    });
+    root.querySelectorAll("[data-add]").forEach((b) =>
+      b.addEventListener("click", () => {
+        setVal((Number(digits(amt.value)) || 0) + Number(b.dataset.add));
+        buzz(8);
+      }));
+    const all = $('[data-all="1"]', root);
+    if (all) all.addEventListener("click", () => { setVal(g.saved); buzz(8); });
+    const submit = () => {
+      const v = Number(digits(amt.value));
+      if (!(v > 0) || v > g.saved) { shake(amt); amt.focus(); return; }
+      close();
+      setTimeout(() => withdrawSaving(id, v), 120);
+    };
+    $("#w-save", root).addEventListener("click", submit);
+    root.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+    preview();
+  });
+}
+
 /* ------------------------- opciones de meta ------------------------- */
 function openGoalOptions(id) {
   const g = state.goals.find((x) => x.id === id);
@@ -727,9 +825,11 @@ function openGoalOptions(id) {
   openSheet(escapeHTML(g.name), `${money(g.saved)} de ${money(g.target)} · ${Math.round(pctOf(g))}%`, `
     <div class="sheet-actions" style="flex-direction:column;margin-top:6px">
       <button class="btn-filled press" id="o-add" style="width:100%">Añadir dinero</button>
+      <button class="btn-tonal press" id="o-withdraw" style="width:100%">Retirar dinero</button>
       <button class="btn-tonal press btn-danger" id="o-del" style="width:100%">Eliminar meta</button>
     </div>`, (root, close) => {
     $("#o-add", root).addEventListener("click", () => { close(); setTimeout(() => openDeposit(id), 180); });
+    $("#o-withdraw", root).addEventListener("click", () => { close(); setTimeout(() => openWithdraw(id), 180); });
     $("#o-del", root).addEventListener("click", () => {
       close();
       setTimeout(() => openConfirm(`¿Eliminar "${g.name}"?`, "Se borrará la meta. Los aportes ya registrados quedan en el historial.", () => deleteGoal(id)), 180);
