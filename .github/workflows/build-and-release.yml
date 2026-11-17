@@ -46,6 +46,9 @@ jobs:
         run: |
           mkdir -p twa
           cp twa-manifest.json twa/twa-manifest.json
+          # Bubblewrap valida el SDK buscando 'tools' o 'bin' en la raiz
+          if [ ! -e "$ANDROID_HOME/bin" ]; then ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/bin"; fi
+          if [ ! -e "$ANDROID_HOME/tools" ]; then ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/tools"; fi
           mkdir -p ~/.bubblewrap
           cat > ~/.bubblewrap/config.json <<EOF
           {
