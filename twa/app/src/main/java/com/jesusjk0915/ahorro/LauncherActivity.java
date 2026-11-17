@@ -2,10 +2,17 @@ package com.jesusjk0915.ahorro;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -13,32 +20,36 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.core.content.FileProvider;
+import androidx.core.view.WindowCompat;
+
+import java.io.File;
+
 public class LauncherActivity extends Activity {
     private WebView webView;
+    private long downloadId = -1;
+    private BroadcastReceiver downloadReceiver;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Respetar la barra de estado: el WebView se dibuja en modo edge-to-edge
-        // (targetSdk 36) y sin esto el contenido se "pasa" por debajo de la barra.
-        int statusBarH = 0;
-        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (id > 0) statusBarH = getResources().getDimensionPixelSize(id);
+        boolean dark = isDark();
+        getWindow().setBackgroundDrawable(new ColorDrawable(surfaceColor()));
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(!dark);
 
         webView = new WebView(this);
-        webView.setPadding(0, statusBarH, 0, 0);
-        int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        webView.setBackgroundColor(night == Configuration.UI_MODE_NIGHT_YES ? 0xFF0D1313 : 0xFFF5FAFA);
+        webView.setBackgroundColor(surfaceColor());
 
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);       // localStorage
+        s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(true);
         s.setAllowContentAccess(true);
-        s.setAllowUniversalAccessFromFileURLs(true); // fetch() a GitHub desde file://
+        s.setAllowUniversalAccessFromFileURLs(true);
         s.setAllowFileAccessFromFileURLs(true);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
@@ -46,11 +57,21 @@ public class LauncherActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return openExternal(request.getUrl());
+                Uri uri = request.getUrl();
+                if ("ahorro".equals(uri.getScheme()) && "install".equals(uri.getHost())) {
+                    String url = uri.getQueryParameter("url");
+                    if (url != null) startDownload(url);
+                    return true;
+                }
+                return openExternal(uri);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                injectTheme(view);
             }
         });
 
-        // Manejar enlaces target="_blank" (descarga del APK)
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog,
@@ -74,13 +95,128 @@ public class LauncherActivity extends Activity {
         webView.loadUrl("file:///android_asset/index.html");
     }
 
+    /* ---------- Material You: colores del fondo de pantalla ---------- */
+    private boolean isDark() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private int sysColor(String name, int fallback) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return fallback;
+        int id = getResources().getIdentifier(name, "color", "android");
+        if (id == 0) return fallback;
+        try {
+            return getColor(id);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private static String hex(int color) {
+        return String.format("#%06X", 0xFFFFFF & color);
+    }
+
+    private int surfaceColor() {
+        boolean dark = isDark();
+        return sysColor(dark ? "system_neutral1_900" : "system_neutral1_50",
+                dark ? 0xFF0D1313 : 0xFFF5FAFA);
+    }
+
+    private void injectTheme(WebView view) {
+        int sbh = 0;
+        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (id > 0) sbh = getResources().getDimensionPixelSize(id);
+
+        boolean dark = isDark();
+        String primary = hex(sysColor(dark ? "system_accent1_200" : "system_accent1_500", dark ? 0xFF7FD4D6 : 0xFF00696B));
+        String onPrimary = hex(sysColor(dark ? "system_accent1_900" : "system_accent1_0", dark ? 0xFF003738 : 0xFFFFFFFF));
+        String primaryContainer = hex(sysColor(dark ? "system_accent1_700" : "system_accent1_100", dark ? 0xFF004F51 : 0xFF9DF1F3));
+        String onPrimaryContainer = hex(sysColor(dark ? "system_accent1_100" : "system_accent1_900", dark ? 0xFF9DF1F3 : 0xFF002021));
+        String secondaryContainer = hex(sysColor(dark ? "system_accent2_700" : "system_accent2_100", dark ? 0xFF2A3F3F : 0xFFCFE7E7));
+        String onSecondaryContainer = hex(sysColor(dark ? "system_accent2_100" : "system_accent2_900", dark ? 0xFFCFE7E7 : 0xFF082020));
+        String tertiary = hex(sysColor(dark ? "system_accent3_200" : "system_accent3_500", dark ? 0xFFFFB59D : 0xFF9C4326));
+        String surfaceLow = hex(sysColor(dark ? "system_neutral1_800" : "system_neutral1_100", dark ? 0xFF141B1B : 0xFFEEF4F4));
+        String onSurface = hex(sysColor(dark ? "system_neutral1_100" : "system_neutral1_900", dark ? 0xFFDFE4E4 : 0xFF171D1D));
+        String onSurfaceVariant = hex(sysColor(dark ? "system_neutral2_400" : "system_neutral2_700", dark ? 0xFFBFC8C8 : 0xFF3F4949));
+        String surface = hex(surfaceColor());
+
+        String js = "document.documentElement.style.setProperty('--sbh','" + sbh + "px');"
+                + "window.__applyWallpaperColors && window.__applyWallpaperColors({"
+                + "primary:'" + primary + "',"
+                + "onPrimary:'" + onPrimary + "',"
+                + "primaryContainer:'" + primaryContainer + "',"
+                + "onPrimaryContainer:'" + onPrimaryContainer + "',"
+                + "secondaryContainer:'" + secondaryContainer + "',"
+                + "onSecondaryContainer:'" + onSecondaryContainer + "',"
+                + "tertiary:'" + tertiary + "',"
+                + "surface:'" + surface + "',"
+                + "surfaceLow:'" + surfaceLow + "',"
+                + "onSurface:'" + onSurface + "',"
+                + "onSurfaceVariant:'" + onSurfaceVariant + "'"
+                + "});";
+        view.evaluateJavascript(js, null);
+    }
+
+    /* ---------- actualización: descargar y abrir instalador ---------- */
+    private void startDownload(String url) {
+        try {
+            Uri source = Uri.parse(url);
+            String scheme = source.getScheme();
+            if (scheme == null || (!scheme.equals("https") && !scheme.equals("http"))) return;
+
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            DownloadManager.Request req = new DownloadManager.Request(source);
+            req.setTitle("Ahorros · Actualización");
+            req.setDescription("Descargando la nueva versión…");
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ahorro-update.apk");
+            downloadId = dm.enqueue(req);
+
+            downloadReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent intent) {
+                    long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                    if (id != downloadId) return;
+                    installApk(c);
+                    unregisterDownloadReceiver();
+                }
+            };
+            registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void installApk(Context c) {
+        try {
+            File apk = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "ahorro-update.apk");
+            Uri uri = FileProvider.getUriForFile(c, c.getPackageName() + ".fileprovider", apk);
+            Intent install = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+            install.setData(uri);
+            install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            install.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            c.startActivity(install);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void unregisterDownloadReceiver() {
+        if (downloadReceiver != null) {
+            try {
+                unregisterReceiver(downloadReceiver);
+            } catch (Exception ignored) {
+            }
+            downloadReceiver = null;
+        }
+    }
+
     private boolean openExternal(Uri uri) {
         String scheme = uri.getScheme();
         if (scheme != null && (scheme.equals("http") || scheme.equals("https"))) {
             try {
                 startActivity(new Intent(Intent.ACTION_VIEW, uri));
                 return true;
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+            }
         }
         return false;
     }
@@ -96,6 +232,7 @@ public class LauncherActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        unregisterDownloadReceiver();
         if (webView != null) {
             webView.destroy();
         }

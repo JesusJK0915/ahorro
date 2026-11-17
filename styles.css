@@ -88,7 +88,7 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 .app {
   max-width: 520px;
   margin-inline: auto;
-  padding: 14px 16px calc(178px + env(safe-area-inset-bottom));
+  padding: calc(14px + var(--sbh, 0px)) 16px calc(178px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
@@ -943,3 +943,46 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
     transition-duration: .01ms !important;
   }
 }
+
+/* ============ pantalla de bienvenida ============ */
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--surface);
+  animation: welcomeIn .45s var(--ease-emph) both;
+}
+.welcome.welcome-out { animation: welcomeOut .45s var(--ease-emph) both; }
+@keyframes welcomeIn { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: scale(1); } }
+@keyframes welcomeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.97); } }
+.welcome-card {
+  width: min(100%, 420px);
+  text-align: center;
+}
+.welcome-art {
+  width: 108px;
+  height: 108px;
+  margin: 0 auto 24px;
+  border-radius: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--on-primary-container);
+  background: var(--primary-container);
+  box-shadow: var(--shadow);
+}
+.welcome-art svg { width: 54px; height: 54px; }
+.welcome-card h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  margin-bottom: 12px;
+}
+.welcome-card p {
+  color: var(--on-surface-variant);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+.welcome-card .btn-filled { width: 100%; }

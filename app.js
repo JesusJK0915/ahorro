@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.0.2";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -43,11 +43,7 @@ const icon = (name, w = 20) =>
 function defaults() {
   const ts = Date.now();
   return {
-    goals: [
-      { id: uid(), name: "Viaje a la playa", target: 2500000, saved: 780000, tint: TINTS[0], ts },
-      { id: uid(), name: "Computador nuevo", target: 4500000, saved: 1450000, tint: TINTS[4], ts },
-      { id: uid(), name: "Fondo de emergencia", target: 6000000, saved: 5400000, tint: TINTS[1], ts },
-    ],
+    goals: [],
     moves: [],
     theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
     ringMode: false,
@@ -83,7 +79,8 @@ function save() {
 /* ------------------------- tema ------------------------- */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
-  $("#themeBtn").setAttribute("aria-label", t === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
+  const tb = $("#themeBtn");
+  if (tb) tb.setAttribute("aria-label", t === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
   const meta = document.querySelector('meta[name="theme-color"]:not([media])');
   if (meta) meta.content = t === "dark" ? "#0d1313" : "#f5fafa";
 }
@@ -113,7 +110,8 @@ function toggleDynamic() {
   save();
   buzz();
   applyDynamic(state.dynamicColor);
-  $("#dynamicToggle").setAttribute("aria-pressed", state.dynamicColor ? "true" : "false");
+  const dt = $("#dynamicToggle");
+  if (dt) dt.setAttribute("aria-pressed", state.dynamicColor ? "true" : "false");
 }
 
 /* ------------------------- animaciones ------------------------- */
@@ -361,8 +359,17 @@ function openUpdatesSheet() {
             <div style="text-align:center">
               <h3 style="margin:0 0 6px">Nueva versión ${escapeHTML(remote)}</h3>
               <p class="muted" style="margin:0 0 14px">${escapeHTML(data.notes || "Hay una actualización disponible.")}</p>
-              <a class="btn-filled press" href="${escapeHTML(data.url || "#")}" target="_blank" rel="noopener" style="display:inline-flex;text-decoration:none">Descargar actualización</a>
+              <button class="btn-filled press" id="installUpdate" data-url="${escapeHTML(data.url || "")}" style="display:inline-flex">Descargar e instalar</button>
             </div>`);
+          const inst = $("#installUpdate", root);
+          if (inst) inst.addEventListener("click", () => {
+            const u = inst.dataset.url;
+            if (!u) return;
+            inst.disabled = true; inst.textContent = "Descargando…";
+            // El Activity intercepta este esquema, descarga y abre el instalador.
+            location.href = "ahorro://install?url=" + encodeURIComponent(u);
+            setTimeout(() => { inst.disabled = false; inst.textContent = "Descargar e instalar"; }, 3000);
+          });
           buzz([10, 40, 10]);
         } else {
           setStatus(`<p style="text-align:center;margin:0">Ya tienes la última versión (${APP_VERSION}).</p>`);
@@ -490,7 +497,8 @@ function renderSettings() {
   $("#setRing", list).addEventListener("click", () => {
     state.ringMode = !state.ringMode;
     save();
-    $("#ringToggle").setAttribute("aria-pressed", state.ringMode ? "true" : "false");
+    const rt = $("#ringToggle");
+    if (rt) rt.setAttribute("aria-pressed", state.ringMode ? "true" : "false");
     render();
     renderSettings();
     buzz();
@@ -840,14 +848,17 @@ function stopWave() { cancelAnimationFrame(waveRaf); waveRaf = 0; }
 reduceMotion.addEventListener("change", () => { if (reduceMotion.matches) stopWave(); else startWave(); });
 
 /* ------------------------- arranque ------------------------- */
-$("#themeBtn").addEventListener("click", toggleTheme);
-$("#dynamicToggle").addEventListener("click", toggleDynamic);
-$("#ringToggle").addEventListener("click", () => {
+$("#themeBtn")?.addEventListener("click", toggleTheme);
+$("#dynamicToggle")?.addEventListener("click", toggleDynamic);
+$("#ringToggle")?.addEventListener("click", () => {
   state.ringMode = !state.ringMode;
   save();
   buzz();
-  $("#ringToggle").setAttribute("aria-pressed", state.ringMode ? "true" : "false");
-  $("#ringToggle").setAttribute("aria-label", state.ringMode ? "Cambiar a progreso lineal" : "Cambiar a progreso circular");
+  const rt = $("#ringToggle");
+  if (rt) {
+    rt.setAttribute("aria-pressed", state.ringMode ? "true" : "false");
+    rt.setAttribute("aria-label", state.ringMode ? "Cambiar a progreso lineal" : "Cambiar a progreso circular");
+  }
   render();
   if (state.ringMode) {
     document.querySelectorAll(".ring").forEach((r) => {
@@ -858,19 +869,68 @@ $("#ringToggle").addEventListener("click", () => {
     });
   }
 });
-$("#newGoalBtn").addEventListener("click", () => openNewGoal());
-$("#emptyCreate").addEventListener("click", () => openNewGoal());
+$("#newGoalBtn")?.addEventListener("click", () => openNewGoal());
+$("#emptyCreate")?.addEventListener("click", () => openNewGoal());
 
 applyThemeMode(state.themeMode || "auto");
 applyDynamic(state.dynamicColor !== false);
-$("#ringToggle").setAttribute("aria-pressed", state.ringMode ? "true" : "false");
-$("#dynamicToggle").setAttribute("aria-pressed", state.dynamicColor !== false ? "true" : "false");
+if ($("#ringToggle")) $("#ringToggle").setAttribute("aria-pressed", state.ringMode ? "true" : "false");
+if ($("#dynamicToggle")) $("#dynamicToggle").setAttribute("aria-pressed", state.dynamicColor !== false ? "true" : "false");
 render();
 startWave();
 requestAnimationFrame(placeIndicator);
 document.fonts?.ready.then(placeIndicator);
 
-if ("serviceWorker" in navigator) {
-  const ok = location.protocol === "https:" || ["localhost", "127.0.0.1"].includes(location.hostname);
-  if (ok) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+/* ------------------------- Material You (color del fondo de pantalla) ------------------------- */
+// El Activity nativo inyecta los colores del esquema dinámico del sistema.
+window.__applyWallpaperColors = (c) => {
+  if (!c) return;
+  const r = document.documentElement;
+  const set = (k, v) => { if (v) r.style.setProperty(k, v); };
+  set("--primary", c.primary);
+  set("--on-primary", c.onPrimary);
+  set("--primary-container", c.primaryContainer);
+  set("--on-primary-container", c.onPrimaryContainer);
+  set("--secondary-container", c.secondaryContainer);
+  set("--on-secondary-container", c.onSecondaryContainer);
+  set("--tertiary", c.tertiary);
+  set("--surface", c.surface);
+  set("--surface-container-low", c.surfaceLow);
+  set("--on-surface", c.onSurface);
+  set("--on-surface-variant", c.onSurfaceVariant);
+  const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+  if (meta && c.surface) meta.content = c.surface;
+};
+
+/* ------------------------- pantalla de bienvenida ------------------------- */
+const WELCOME_KEY = "ahorros.welcome.v1";
+function maybeWelcome() {
+  let seen = false;
+  try { seen = localStorage.getItem(WELCOME_KEY) === "1"; } catch {}
+  if (seen) return;
+  const el = document.createElement("div");
+  el.className = "welcome";
+  el.id = "welcome";
+  el.innerHTML = `
+    <div class="welcome-card">
+      <div class="welcome-art" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/>
+          <path d="M16 12.5h2.5"/><path d="M12 3v3M6 3v3M18 3v3"/>
+        </svg>
+      </div>
+      <h2>Tu dinero, con rumbo</h2>
+      <p>Crea metas, registra aportes y mira cómo crece tu ahorro. Todo se guarda en tu celular, sin cuentas ni internet.</p>
+      <button class="btn-filled press" id="welcomeStart">Empezar a ahorrar</button>
+    </div>`;
+  document.body.appendChild(el);
+  $("#welcomeStart", el).addEventListener("click", () => {
+    try { localStorage.setItem(WELCOME_KEY, "1"); } catch {}
+    el.classList.add("welcome-out");
+    setTimeout(() => el.remove(), 480);
+    buzz(20);
+  });
 }
+maybeWelcome();
+
+// En la APK (file://) no registramos service worker: podría cachear una versión vieja.
