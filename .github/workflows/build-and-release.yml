@@ -49,6 +49,7 @@ jobs:
 
       - name: Prepare TWA project
         run: |
+          chmod +x twa/gradlew
           if [ ! -e "$ANDROID_HOME/bin" ]; then ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/bin"; fi
           if [ ! -e "$ANDROID_HOME/tools" ]; then ln -s "$ANDROID_HOME/cmdline-tools/latest/bin" "$ANDROID_HOME/tools"; fi
           mkdir -p ~/.bubblewrap
