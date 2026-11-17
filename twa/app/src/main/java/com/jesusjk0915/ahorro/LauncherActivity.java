@@ -75,6 +75,12 @@ public class LauncherActivity extends Activity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
 
+        // El celular de accesibilidad (fuente grande del sistema) agranda el WebView
+        // y obliga a deslizar. Limitamos el escalado a un 110% legible.
+        float scale = getResources().getConfiguration().fontScale;
+        int zoom = Math.round(scale * 100);
+        s.setTextZoom(Math.max(100, Math.min(110, zoom)));
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
