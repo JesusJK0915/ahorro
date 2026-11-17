@@ -58,14 +58,14 @@ jobs:
           printf '{\n  "jdkPath": "%s",\n  "androidSdkPath": "%s"\n}\n' "$JAVA_HOME" "$ANDROID_HOME" > ~/.bubblewrap/config.json
 
       - name: Build APK
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd twa
-          printf 'n\nn\nn\n' | bubblewrap build \
-            --keystore ../keystore.jks \
-            --keystorePassword "${{ secrets.KEYSTORE_PASSWORD }}" \
-            --keyAlias "${{ secrets.KEY_ALIAS }}" \
-            --keyPassword "${{ secrets.KEY_PASSWORD }}" \
-            --output ../app-release.apk
+          printf 'n\n' | bubblewrap build \
+            --signingKeyPath ../keystore.jks \
+            --signingKeyAlias "${{ secrets.KEY_ALIAS }}"
 
       - name: Read version from app.js
         id: ver
@@ -78,7 +78,7 @@ jobs:
         with:
           tag_name: v${{ steps.ver.outputs.version }}
           name: Ahorros v${{ steps.ver.outputs.version }}
-          files: app-release.apk
+          files: app-release-signed.apk
           generate_release_notes: true
 
       - name: Update version.json
@@ -86,7 +86,7 @@ jobs:
           VERSION: ${{ steps.ver.outputs.version }}
           REPO: ${{ github.repository }}
         run: |
-          APK_URL="https://github.com/${REPO}/releases/download/v${VERSION}/app-release.apk"
+          APK_URL="https://github.com/${REPO}/releases/download/v${VERSION}/app-release-signed.apk"
           cat > version.json <<EOF
           {
             "version": "${VERSION}",
