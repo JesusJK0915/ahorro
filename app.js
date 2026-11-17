@@ -21,7 +21,7 @@ const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
-const APP_VERSION = "1.0.8";
+const APP_VERSION = "1.0.9";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -192,6 +192,7 @@ document.addEventListener("pointerdown", (e) => {
 function render() {
   renderHero();
   renderGoals();
+  renderStats();
   renderHistory();
   renderSettings();
 }
@@ -215,6 +216,69 @@ function renderHero() {
   const n = state.goals.length;
   $("#heroGoals").textContent = `${n} ${n === 1 ? "meta" : "metas"}`;
   $("#heroTarget").textContent = `de ${money(target)}`;
+}
+
+/* ------------------------- estadísticas ------------------------- */
+let statsReady = false;
+const monthKey = (ts) => {
+  const d = new Date(ts);
+  return d.getFullYear() + "-" + d.getMonth();
+};
+
+function renderStats() {
+  const body = $("#statsBody");
+  const loading = $("#statsLoading");
+  if (!body || !loading) return;
+  if (!statsReady) {
+    // Primera carga: mostrar el "gusanito" de Material 3.
+    loading.hidden = false;
+    body.hidden = true;
+    setTimeout(() => {
+      statsReady = true;
+      loading.hidden = true;
+      body.hidden = false;
+      paintStats();
+    }, 720);
+  } else {
+    loading.hidden = true;
+    body.hidden = false;
+    paintStats();
+  }
+}
+
+function paintStats() {
+  const key = monthKey(Date.now());
+  const sum = (arr) => arr.reduce((s, m) => s + (Number(m.amount) || 0), 0);
+  const inMes = state.moves.filter((m) => m.type !== "withdraw" && monthKey(m.ts) === key);
+  const outMes = state.moves.filter((m) => m.type === "withdraw" && monthKey(m.ts) === key);
+
+  tween($("#statIn"), sum(inMes));
+  tween($("#statOut"), sum(outMes));
+  $("#statCountIn").textContent = inMes.length;
+  $("#statCountOut").textContent = outMes.length;
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  const data = days.map((d) => {
+    const s = d.toDateString();
+    const inc = sum(state.moves.filter((m) => m.type !== "withdraw" && new Date(m.ts).toDateString() === s));
+    const out = sum(state.moves.filter((m) => m.type === "withdraw" && new Date(m.ts).toDateString() === s));
+    return { d, net: inc - out };
+  });
+  const max = Math.max(1, ...data.map((x) => Math.abs(x.net)));
+  $("#chart").innerHTML = data.map((x, i) => {
+    const h = Math.max(5, Math.round((Math.abs(x.net) / max) * 100));
+    const lbl = x.d.toLocaleDateString("es-CO", { weekday: "short" }).replace(".", "");
+    return `<div class="chart-bar ${x.net < 0 ? "out" : ""}" style="--i:${i}" title="${money(x.net)}">
+      <i style="height:${h}%"></i><small>${lbl}</small>
+    </div>`;
+  }).join("");
+  $("#chartTotal").textContent = money(data.reduce((s, x) => s + x.net, 0));
 }
 
 function renderGoals() {

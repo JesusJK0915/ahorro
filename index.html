@@ -57,6 +57,40 @@
           </div>
         </div>
 
+        <section class="stats" id="stats" aria-label="Estadísticas">
+          <div class="stats-head">
+            <h2>Estadísticas</h2>
+            <span class="stats-badge">Este mes</span>
+          </div>
+          <div class="stats-loading" id="statsLoading">
+            <div class="worm"><span></span></div>
+          </div>
+          <div class="stats-body" id="statsBody" hidden>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-label">Ahorrado</span>
+                <strong class="stat-value" id="statIn">$0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Retirado</span>
+                <strong class="stat-value" id="statOut">$0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Aportes</span>
+                <strong class="stat-value" id="statCountIn">0</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Retiros</span>
+                <strong class="stat-value" id="statCountOut">0</strong>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-head"><span>Últimos 7 días</span><b id="chartTotal">$0</b></div>
+              <div class="chart" id="chart"></div>
+            </div>
+          </div>
+        </section>
+
         <div class="section-head">
           <h2>Mis metas</h2>
           <button class="text-btn press" id="newGoalBtn">Nueva meta</button>

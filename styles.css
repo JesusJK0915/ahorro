@@ -996,3 +996,76 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   margin-bottom: 28px;
 }
 .welcome-card .btn-filled { width: 100%; }
+
+/* ============ estadísticas (Material 3 Expressivo) ============ */
+.stats { margin: 2px 0 22px; }
+.stats-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.stats-head h2 { font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
+.stats-badge {
+  font-size: 11px; font-weight: 700;
+  color: var(--on-primary-container);
+  background: var(--primary-container);
+  padding: 5px 11px; border-radius: 999px;
+}
+
+/* Indicador indeterminado "gusanito" de Material 3 */
+.stats-loading { padding: 22px 2px; }
+.worm {
+  position: relative; height: 4px; border-radius: 999px;
+  background: var(--surface-container-highest); overflow: hidden;
+}
+.worm span {
+  position: absolute; top: 0; bottom: 0; left: -40%;
+  width: 40%; border-radius: 999px; background: var(--primary);
+  animation: wormRun 1.35s var(--ease-emph) infinite;
+}
+@keyframes wormRun {
+  0%   { left: -40%; transform: scaleX(.35); }
+  50%  { left: 32%;  transform: scaleX(1); }
+  100% { left: 100%; transform: scaleX(.35); }
+}
+
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat-card {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 14px 15px; border-radius: var(--r-md);
+  background: var(--surface-container-low);
+  animation: cardIn .5s var(--ease-spring) both;
+}
+.stat-card:nth-child(2) { animation-delay: .06s; }
+.stat-card:nth-child(3) { animation-delay: .12s; }
+.stat-card:nth-child(4) { animation-delay: .18s; }
+.stat-label { font-size: 12px; font-weight: 600; color: var(--on-surface-variant); }
+.stat-value { font-size: 19px; font-weight: 800; letter-spacing: -.4px; font-variant-numeric: tabular-nums; }
+
+.chart-card {
+  margin-top: 10px; padding: 14px 15px 12px;
+  border-radius: var(--r-lg); background: var(--surface-container-low);
+  animation: cardIn .55s var(--ease-spring) both; animation-delay: .2s;
+}
+.chart-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; color: var(--on-surface-variant); margin-bottom: 12px;
+}
+.chart-head b { color: var(--on-surface); font-variant-numeric: tabular-nums; }
+.chart { display: flex; align-items: flex-end; gap: 7px; height: 76px; }
+.chart-bar {
+  flex: 1; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; gap: 5px;
+}
+.chart-bar i {
+  display: block; width: 100%; max-width: 26px; min-height: 5px;
+  border-radius: 8px 8px 4px 4px; background: var(--primary);
+  transform-origin: bottom;
+  animation: barGrow .6s var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * 55ms + 220ms);
+}
+.chart-bar.out i { background: var(--error); }
+.chart-bar small { font-size: 9px; color: var(--on-surface-variant); text-transform: capitalize; }
+@keyframes barGrow {
+  from { transform: scaleY(.02); opacity: .25; }
+  to   { transform: scaleY(1); opacity: 1; }
+}
