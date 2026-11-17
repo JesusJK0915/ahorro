@@ -26,13 +26,9 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-
       - name: Accept SDK licenses & install build tools
         run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/16.0/bin:$PATH"
           yes | sdkmanager --licenses || true
           sdkmanager "build-tools;36.1.0" "platforms;android-34"
 
