@@ -3,6 +3,7 @@ package com.jesusjk0915.ahorro;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
@@ -20,7 +21,17 @@ public class LauncherActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Respetar la barra de estado: el WebView se dibuja en modo edge-to-edge
+        // (targetSdk 36) y sin esto el contenido se "pasa" por debajo de la barra.
+        int statusBarH = 0;
+        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (id > 0) statusBarH = getResources().getDimensionPixelSize(id);
+
         webView = new WebView(this);
+        webView.setPadding(0, statusBarH, 0, 0);
+        int night = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        webView.setBackgroundColor(night == Configuration.UI_MODE_NIGHT_YES ? 0xFF0D1313 : 0xFFF5FAFA);
+
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);       // localStorage
