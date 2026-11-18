@@ -15,4 +15,5 @@
 -->
 <resources>
     <color name="shortcut_background">#F5F5F5</color>
+    <color name="surface_dark">#FF0D1313</color>
 </resources>

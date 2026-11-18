@@ -86,8 +86,8 @@ public final class Installer {
                 session.fsync(out);
                 out.close();
 
-                Intent cb = new Intent(c, LauncherActivity.class);
-                cb.setAction(LauncherActivity.ACTION_INSTALL_RESULT);
+                Intent cb = new Intent(c, MainActivity.class);
+                cb.setAction("ahorro.INSTALL_RESULT");
                 PendingIntent pending = PendingIntent.getActivity(c, sessionId, cb,
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
                 session.commit(pending.getIntentSender());

@@ -21,25 +21,16 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Accept SDK licenses & install build tools
         run: |
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/16.0/bin:$PATH"
           yes | sdkmanager --licenses || true
           sdkmanager "build-tools;36.1.0" "platforms;android-36"
 
-      - name: Copy web assets into APK
-        run: |
-          cp index.html styles.css app.js lock.js icon.svg manifest.webmanifest twa/app/src/main/assets/
-
       - name: Decode signing keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
 
-      - name: Build signed APK (WebView)
+      - name: Build signed APK (Kotlin + Compose)
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -62,13 +53,13 @@ jobs:
       - name: Show build error detail
         if: failure()
         run: |
-          MSG=$(grep -E -A4 -B2 "error:|What went wrong|Execution failed|FAILURE:|Could not|cannot find" build.log | head -40 | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g' || tail -40 build.log | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')
+          MSG=$(grep -E -A4 -B2 "error:|What went wrong|Execution failed|FAILURE:|Could not|cannot find|Unresolved" build.log | head -40 | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g' || tail -40 build.log | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')
           echo "::error::$MSG"
 
-      - name: Read version from app.js
+      - name: Read version from Gradle
         id: ver
         run: |
-          V=$(grep -oP 'APP_VERSION = "\K[^"]+' app.js)
+          V=$(grep -oP 'versionName "\K[^"]+' twa/app/build.gradle | head -1)
           echo "version=$V" >> $GITHUB_OUTPUT
 
       - name: Verify APK exists
