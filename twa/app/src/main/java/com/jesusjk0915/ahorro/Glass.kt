@@ -77,26 +77,27 @@ fun Modifier.iosDockGlass(settings: Settings): Modifier {
             spotColor = cs.primary.copy(alpha = 0.35f),
         )
         .background(
-            Color.White.copy(alpha = if (opaque) 0.04f else 0.08f),
+            Color.White.copy(alpha = if (opaque) 0.05f else 0.10f),
             shape,
         )
         .background(
             Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = if (opaque) 0.10f else 0.20f),
-                    Color.White.copy(alpha = 0.03f),
+                    Color.White.copy(alpha = if (opaque) 0.14f else 0.30f),
+                    Color.White.copy(alpha = 0.05f),
                     Color.Transparent,
+                    cs.primary.copy(alpha = 0.08f),
                 ),
             ),
             shape,
         )
         .border(
-            width = 1.5.dp,
+            width = 2.dp,
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.55f),
-                    cs.primary.copy(alpha = 0.20f),
-                    Color.White.copy(alpha = 0.10f),
+                    Color.White.copy(alpha = 0.70f),
+                    cs.primary.copy(alpha = 0.28f),
+                    Color.White.copy(alpha = 0.16f),
                 ),
             ),
             shape = shape,
