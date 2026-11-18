@@ -41,8 +41,8 @@ import androidx.compose.ui.unit.sp
 /** Icono "anillo" de Metas, igual al SVG de la web (dos círculos concéntricos). */
 @Composable
 private fun TargetIcon(tint: Color) {
-    Canvas(Modifier.size(20.dp)) {
-        val s = 20f / 24f * density
+    Canvas(Modifier.size(26.dp)) {
+        val s = size.minDimension / 24f
         val stroke = 2f * s
         drawCircle(color = tint, radius = 8.5f * s, style = Stroke(stroke))
         drawCircle(color = tint, radius = 3.5f * s, style = Stroke(stroke))
@@ -52,8 +52,8 @@ private fun TargetIcon(tint: Color) {
 /** Icono de Historial, igual al SVG de la web (tres líneas, la última más corta). */
 @Composable
 private fun ListIcon(tint: Color) {
-    Canvas(Modifier.size(20.dp)) {
-        val s = 20f / 24f * density
+    Canvas(Modifier.size(26.dp)) {
+        val s = size.minDimension / 24f
         val stroke = 2f * s
         drawLine(tint, Offset(4f * s, 7f * s), Offset(20f * s, 7f * s), stroke)
         drawLine(tint, Offset(4f * s, 12f * s), Offset(20f * s, 12f * s), stroke)
@@ -107,7 +107,8 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         .offset(x = indicatorX)
                         .width(indicatorW)
                         .height(hs[tab])
-                        .background(cs.primaryContainer, RoundedCornerShape(50)),
+                        // Sin relleno sólido: el indicador sólo tiña levemente el cristal.
+                        .background(cs.primaryContainer.copy(alpha = 0.14f), RoundedCornerShape(50)),
                 )
             }
 
@@ -140,7 +141,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                             else -> Icon(
                                 Icons.Default.Settings,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(26.dp),
                                 tint = tint,
                             )
                         }
