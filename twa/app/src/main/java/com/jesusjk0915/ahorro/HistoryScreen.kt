@@ -1,5 +1,6 @@
 package com.jesusjk0915.ahorro
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -172,16 +176,36 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
 @Composable
 private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
     val color = if (m.withdraw) MaterialTheme.colorScheme.error else tintAt(m.tint)
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val enter by animateFloatAsState(if (shown) 1f else 0f, label = "moveEnter")
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick(m) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick(m) }
+            .graphicsLayer { alpha = enter },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            hoveredElevation = 8.dp,
+            focusedElevation = 8.dp,
+        ),
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
+                Modifier
+                    .width(3.dp)
+                    .height(34.dp)
+                    .background(color, RoundedCornerShape(50)),
+            )
+            Spacer(Modifier.width(10.dp))
+            Box(
                 Modifier.size(40.dp).background(
-                    color.copy(alpha = 0.15f),
-                    androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+                    Brush.linearGradient(
+                        listOf(color.copy(alpha = 0.24f), color.copy(alpha = 0.08f)),
+                    ),
+                    RoundedCornerShape(14.dp),
                 ),
                 contentAlignment = Alignment.Center,
             ) {

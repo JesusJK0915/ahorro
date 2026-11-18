@@ -1,5 +1,10 @@
 package com.jesusjk0915.ahorro
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -40,6 +45,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -276,23 +282,55 @@ private fun AppContent(
     val cs = MaterialTheme.colorScheme
     val density = LocalDensity.current
 
+    // Fondo ambiental animado: manchas de Material You bien difuminadas.
+    // Le dan profundidad al cristal y algo de color que atravesar al blur.
+    val ambient = rememberInfiniteTransition(label = "ambient")
+    val pulseA by ambient.animateFloat(
+        initialValue = 0.86f,
+        targetValue = 1.14f,
+        animationSpec = infiniteRepeatable(tween(9000), RepeatMode.Reverse),
+        label = "ambientA",
+    )
+    val pulseB by ambient.animateFloat(
+        initialValue = 1.12f,
+        targetValue = 0.88f,
+        animationSpec = infiniteRepeatable(tween(11000), RepeatMode.Reverse),
+        label = "ambientB",
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Glow ambiental (como .hero-glow del CSS): le da al vidrio algo
-        // de color que atravesar y hace visible el efecto del dock.
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = (-130).dp, y = (-150).dp)
+                .size(340.dp)
+                .background(
+                    Brush.radialGradient(listOf(cs.primary.copy(alpha = 0.16f), Color.Transparent)),
+                )
+                .blur(70.dp)
+                .graphicsLayer { scaleX = pulseA; scaleY = pulseA },
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = 140.dp, y = 120.dp)
+                .size(320.dp)
+                .background(
+                    Brush.radialGradient(listOf(cs.tertiary.copy(alpha = 0.14f), Color.Transparent)),
+                )
+                .blur(70.dp)
+                .graphicsLayer { scaleX = pulseB; scaleY = pulseB },
+        )
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(260.dp)
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                        ),
-                    ),
+                    Brush.verticalGradient(listOf(Color.Transparent, cs.primary.copy(alpha = 0.18f))),
                 )
-                .blur(60.dp),
+                .blur(60.dp)
+                .graphicsLayer { alpha = pulseA },
         )
         Column(
             Modifier

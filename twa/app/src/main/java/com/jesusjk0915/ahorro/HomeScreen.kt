@@ -3,6 +3,7 @@ package com.jesusjk0915.ahorro
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -10,6 +11,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,11 +38,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.sin
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -51,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Canvas
+import java.util.Calendar
 import kotlin.math.abs
 
 private fun pct(g: Goal): Float =
@@ -148,6 +156,13 @@ fun HomeScreen(
     val totalTarget = state.goals.sumOf { it.target }
     val globalPct = if (totalTarget > 0) (totalSaved.toFloat() / totalTarget * 100f).coerceIn(0f, 100f) else 0f
     val onHero = MaterialTheme.colorScheme.onPrimaryContainer
+    val heroGlowAnim = rememberInfiniteTransition(label = "heroGlow")
+    val heroGlow by heroGlowAnim.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.18f,
+        animationSpec = infiniteRepeatable(tween(6500), RepeatMode.Reverse),
+        label = "heroGlowPulse",
+    )
 
     Column(
         modifier = Modifier
@@ -213,7 +228,8 @@ fun HomeScreen(
                             Brush.radialGradient(
                                 listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
                             ),
-                        ),
+                        )
+                        .graphicsLayer { scaleX = heroGlow; scaleY = heroGlow },
                 )
                 Column(modifier = Modifier.fillMaxWidth().padding(22.dp)) {
                     Row(
@@ -344,7 +360,22 @@ fun HomeScreen(
 private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
     val color = tintAt(g.tint)
     val p = pct(g)
-    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val enter by animateFloatAsState(if (shown) 1f else 0f, tween(420), label = "goalEnter")
+    val rise by animateDpAsState(if (shown) 0.dp else 14.dp, tween(420), label = "goalRise")
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .offset(y = rise)
+            .graphicsLayer { alpha = enter },
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            hoveredElevation = 10.dp,
+            focusedElevation = 10.dp,
+        ),
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             if (ring) {
                 Box(contentAlignment = Alignment.Center) {
@@ -381,8 +412,16 @@ private fun StatsCard(vm: AppViewModel) {
     val buckets = last7(moves)
     val calendar = monthCalendar(moves)
     val maxNet = buckets.maxOf { abs(it.net) }.coerceAtLeast(1)
+    val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            hoveredElevation = 10.dp,
+            focusedElevation = 10.dp,
+        ),
+    ) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Estadísticas", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -408,15 +447,29 @@ private fun StatsCard(vm: AppViewModel) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 buckets.forEach { b ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        val h = (abs(b.net).toFloat() / maxNet.toFloat() * 60f).dp.coerceAtLeast(3.dp)
+                        val targetH = (abs(b.net).toFloat() / maxNet.toFloat() * 60f).dp.coerceAtLeast(3.dp)
+                        val h by animateDpAsState(targetH, spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        ), label = "bar${b.label}")
+                        val barColor = if (b.net < 0) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary
                         Box(Modifier.height(64.dp), contentAlignment = Alignment.BottomCenter) {
                             Box(
                                 Modifier
                                     .width(16.dp)
                                     .height(h)
+                                    .shadow(
+                                        4.dp,
+                                        RoundedCornerShape(8.dp),
+                                        ambientColor = Color.Black.copy(alpha = 0.35f),
+                                        spotColor = barColor.copy(alpha = 0.4f),
+                                    )
                                     .background(
-                                        if (b.net < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(6.dp),
+                                        Brush.verticalGradient(
+                                            listOf(barColor, barColor.copy(alpha = 0.45f)),
+                                        ),
+                                        RoundedCornerShape(8.dp),
                                     )
                             )
                         }
@@ -458,11 +511,27 @@ private fun StatsCard(vm: AppViewModel) {
                                     3 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.68f)
                                     else -> MaterialTheme.colorScheme.primary
                                 }
+                                val cellShape = RoundedCornerShape(9.dp)
                                 Box(
-                                    Modifier.size(30.dp).background(bg, RoundedCornerShape(8.dp)),
+                                    Modifier
+                                        .size(30.dp)
+                                        .background(bg, cellShape)
+                                        .then(
+                                            if (day.day == today) {
+                                                Modifier.border(
+                                                    1.5.dp,
+                                                    MaterialTheme.colorScheme.primary,
+                                                    cellShape,
+                                                )
+                                            } else Modifier,
+                                        ),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Text("${day.day}", style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        "${day.day}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (day.day == today) FontWeight.ExtraBold else FontWeight.Normal,
+                                    )
                                 }
                             }
                         }
@@ -475,7 +544,10 @@ private fun StatsCard(vm: AppViewModel) {
 
 @Composable
 private fun StatBox(label: String, value: String, modifier: Modifier) {
-    Card(modifier = modifier) {
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+    ) {
         Column(Modifier.padding(12.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
