@@ -38,7 +38,7 @@ public class BiometricBridge {
                 return;
             }
             try {
-                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder(activity)
+                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
                         .setTitle("Ahorros")
                         .setSubtitle("Confirma tu huella para entrar")
                         .setNegativeButtonText("Cancelar")
