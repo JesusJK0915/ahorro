@@ -32,10 +32,12 @@ class BackdropBlurView(context: Context) : View(context) {
 
     fun setRadius(dp: Float, density: Float) {
         val px = dp * density
-        blurPaint.renderEffect = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            RenderEffect.createBlurEffect(px, px, Shader.TileMode.CLAMP)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            blurPaint.setRenderEffect(
+                RenderEffect.createBlurEffect(px, px, Shader.TileMode.CLAMP),
+            )
         } else {
-            null
+            blurPaint.setRenderEffect(null)
         }
         invalidate()
     }
