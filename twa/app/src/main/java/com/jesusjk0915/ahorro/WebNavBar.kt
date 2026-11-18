@@ -144,35 +144,29 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .padding(horizontal = 20.dp)
-                .widthIn(max = 560.dp)
+                .padding(horizontal = 14.dp)
+                .widthIn(max = 492.dp)
                 .liquidGlass(settings, shape = RoundedCornerShape(50))
-                .padding(10.dp)
+                .padding(7.dp)
                 .clip(RoundedCornerShape(50))
-                .shadow(
-                    elevation = if (settings.glass) 16.dp else 8.dp,
-                    shape = RoundedCornerShape(50),
-                    ambientColor = Color.Black.copy(alpha = 0.5f),
-                    spotColor = cs.primary.copy(alpha = 0.35f),
-                )
                 .drawBehind {
                     val x = sheen * size.width
                     drawRect(
                         brush = Brush.linearGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.White.copy(alpha = 0.30f),
+                                Color.White.copy(alpha = 0.18f),
                                 Color.Transparent,
                             ),
-                            start = Offset(x - size.width * 0.35f, 0f),
-                            end = Offset(x + size.width * 0.35f, size.height),
+                            start = Offset(x - size.width * 0.3f, 0f),
+                            end = Offset(x + size.width * 0.3f, size.height),
                         ),
                     )
                 }
                 .graphicsLayer {
                     alpha = enter
                     translationY = (1f - enter) * enterOffset
-                    val s = 0.92f + 0.08f * enter
+                    val s = 0.94f + 0.06f * enter
                     scaleX = s
                     scaleY = s
                 },
