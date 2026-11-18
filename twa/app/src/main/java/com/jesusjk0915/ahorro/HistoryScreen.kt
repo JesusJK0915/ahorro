@@ -14,17 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -40,13 +43,30 @@ import androidx.compose.ui.unit.dp
 fun DropdownField(label: String, options: List<String>, selected: String, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+        Column {
             Text(
-                "$label: $selected",
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                label.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
             )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .clickable { expanded = true }
+                    .padding(horizontal = 14.dp, vertical = 13.dp),
+            ) {
+                Text(
+                    selected,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         DropdownMenu(
             expanded = expanded,
@@ -92,7 +112,19 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
     }.take(80)
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 14.dp)) {
-        Text("Historial", style = MaterialTheme.typography.headlineMedium)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Historial",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                "${moves.size} movimientos",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(
             "Todos tus aportes y retiros",
             style = MaterialTheme.typography.bodyMedium,
@@ -132,12 +164,6 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
                 }
             }
         } else {
-            Text(
-                "${moves.size} movimientos",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(6.dp))
             LazyColumn(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
                 items(moves, key = { it.id }) { m ->
                     MoveRow(m, onMoveClick)
@@ -151,7 +177,11 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
 @Composable
 private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
     val color = if (m.withdraw) MaterialTheme.colorScheme.error else tintAt(m.tint)
-    Card(modifier = Modifier.fillMaxWidth().clickable { onClick(m) }) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick(m) },
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(40.dp).background(
@@ -182,12 +212,22 @@ private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
                 color = color,
             )
             Spacer(Modifier.width(6.dp))
-            Icon(
-                Icons.Default.MoreHoriz,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
+            Box(
+                Modifier
+                    .size(28.dp)
+                    .background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                        RoundedCornerShape(10.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.MoreHoriz,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
     }
 }

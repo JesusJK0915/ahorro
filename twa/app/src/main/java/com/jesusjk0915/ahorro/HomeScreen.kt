@@ -1,5 +1,11 @@
 package com.jesusjk0915.ahorro
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,14 +16,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -26,16 +31,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Canvas
 import kotlin.math.abs
 
@@ -68,6 +77,49 @@ private fun ProgressLine(value: Float, color: Color) {
     }
 }
 
+/** Barra de progreso con forma de ola, igual a la versión web. */
+@Composable
+private fun WaveProgress(value: Float, color: Color) {
+    val infinite = rememberInfiniteTransition(label = "wave")
+    val phase by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "wavePhase",
+    )
+    Canvas(Modifier.fillMaxWidth().height(18.dp)) {
+        val center = size.height / 2f
+        val amp = size.height * 0.16f
+        val waveLen = 44f * density
+        val shift = phase * waveLen
+        fun wave(): Path {
+            val path = Path()
+            var x = -waveLen + shift
+            path.moveTo(x, center)
+            while (x < size.width + waveLen) {
+                path.cubicTo(
+                    x + waveLen * 0.25f, center - amp,
+                    x + waveLen * 0.75f, center + amp,
+                    x + waveLen, center,
+                )
+                x += waveLen
+            }
+            return path
+        }
+        val stroke = Stroke(width = size.height * 0.62f)
+        drawPath(wave(), color = color.copy(alpha = 0.20f), style = stroke)
+        val w = size.width * (value / 100f)
+        if (w > 0f) {
+            clipRect(right = w) {
+                drawPath(wave(), color = color, style = stroke)
+            }
+        }
+    }
+}
+
 @Composable
 fun HomeScreen(
     vm: AppViewModel,
@@ -79,6 +131,7 @@ fun HomeScreen(
     val totalSaved = state.goals.sumOf { it.saved }
     val totalTarget = state.goals.sumOf { it.target }
     val globalPct = if (totalTarget > 0) (totalSaved.toFloat() / totalTarget * 100f).coerceIn(0f, 100f) else 0f
+    val onHero = MaterialTheme.colorScheme.onPrimaryContainer
 
     Column(
         modifier = Modifier
@@ -86,47 +139,136 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {
-        Text("Ahorros", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text(
-            "Tu dinero, bajo control",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                        ),
+                        RoundedCornerShape(13.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.Savings,
+                    contentDescription = null,
+                    modifier = Modifier.size(21.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "Ahorros",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+            )
+        }
+        Spacer(Modifier.height(14.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            shape = RoundedCornerShape(32.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(18.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.primary,
+                            ),
+                        ),
+                        RoundedCornerShape(32.dp),
+                    ),
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "Total ahorrado",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 60.dp, y = (-100).dp)
+                        .size(240.dp)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(Color.White.copy(alpha = 0.28f), Color.Transparent),
+                            ),
+                        ),
+                )
+                Column(modifier = Modifier.fillMaxWidth().padding(22.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            "Ahorro total",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = onHero.copy(alpha = 0.78f),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.28f), RoundedCornerShape(50)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                "${globalPct.toInt()}%",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = onHero,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         money(totalSaved),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = onHero,
                     )
-                    Text(
-                        "de ${money(totalTarget)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-                if (state.settings.ringMode) {
-                    ProgressRing(globalPct, MaterialTheme.colorScheme.primary)
-                }
-            }
-            if (!state.settings.ringMode) {
-                Box(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 18.dp)) {
-                    ProgressLine(globalPct, MaterialTheme.colorScheme.primary)
+                    if (state.settings.ringMode) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                ProgressRing(globalPct, onHero, 180)
+                                Text(
+                                    "${globalPct.toInt()}%",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = onHero,
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(Modifier.height(14.dp))
+                        WaveProgress(globalPct, onHero)
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            "${state.goals.size} metas",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onHero.copy(alpha = 0.8f),
+                        )
+                        Text(
+                            "de ${money(totalTarget)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onHero.copy(alpha = 0.8f),
+                        )
+                    }
                 }
             }
         }
@@ -136,12 +278,15 @@ fun HomeScreen(
         Spacer(Modifier.height(18.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Mis metas", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             Text(
-                "${state.goals.size}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                "Mis metas",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
             )
+            TextButton(onClick = onNewGoal) {
+                Text("Nueva meta", fontWeight = FontWeight.Bold)
+            }
         }
         Spacer(Modifier.height(8.dp))
 
@@ -175,12 +320,6 @@ fun HomeScreen(
             state.goals.forEach { g ->
                 GoalCard(g = g, ring = state.settings.ringMode, onClick = { onGoalClick(g) })
                 Spacer(Modifier.height(10.dp))
-            }
-            Spacer(Modifier.height(6.dp))
-            Button(onClick = onNewGoal, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Default.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Nueva meta")
             }
         }
         Spacer(Modifier.height(24.dp))
