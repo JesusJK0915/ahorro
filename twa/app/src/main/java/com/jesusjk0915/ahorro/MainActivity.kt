@@ -1,9 +1,12 @@
 package com.jesusjk0915.ahorro
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
@@ -35,6 +38,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -276,6 +280,38 @@ private fun AppContent(
     var confirm by remember { mutableStateOf<ConfirmState?>(null) }
     val cs = MaterialTheme.colorScheme
 
+    // Entrada elástica al abrir la app (rebote tipo iOS, sin AnimatedContent).
+    val enterAnim = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        enterAnim.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+    val enter = enterAnim.value
+
+    // Cambio de pestaña con dirección y rebote suave.
+    val tabAnim = remember { Animatable(1f) }
+    var previousTab by remember { mutableIntStateOf(tab) }
+    var slideDir by remember { mutableStateOf(1f) }
+    LaunchedEffect(tab) {
+        if (tab == previousTab) return@LaunchedEffect
+        slideDir = if (tab > previousTab) 1f else -1f
+        previousTab = tab
+        tabAnim.snapTo(0f)
+        tabAnim.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioLowBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+        )
+    }
+    val tabProgress = tabAnim.value
+
     // Fondo ambiental animado: manchas de Material You bien difuminadas.
     // Le dan profundidad al cristal y algo de color que atravesar al blur.
     val ambient = rememberInfiniteTransition(label = "ambient")
@@ -333,7 +369,15 @@ private fun AppContent(
                     enabled = sheet == null && confirm == null,
                     tab = tab,
                     onTab = { tab = it },
-                ),
+                )
+                .graphicsLayer {
+                    alpha = enter.coerceIn(0f, 1f) * (0.45f + 0.55f * tabProgress.coerceIn(0f, 1f))
+                    translationX = (1f - tabProgress) * slideDir * 28f
+                    translationY = (1f - enter) * 26f + (1f - tabProgress) * 6f
+                    val scale = (0.96f + 0.04f * enter) * (0.985f + 0.015f * tabProgress)
+                    scaleX = scale
+                    scaleY = scale
+                },
         ) {
             when (tab) {
                 0 -> HomeScreen(
