@@ -15,6 +15,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
@@ -270,20 +274,38 @@ private fun AppContent(
                     onTab = { tab = it },
                 ),
         ) {
-            when (tab) {
-                0 -> HomeScreen(
-                    vm = vm,
-                    onNewGoal = { sheet = SheetState.NewGoal },
-                    onGoalClick = { sheet = SheetState.GoalOptions(it) },
-                )
-                1 -> HistoryScreen(vm = vm, onMoveClick = { sheet = SheetState.MoveOptions(it) })
-                2 -> SettingsScreen(
-                    vm = vm,
-                    deviceLockAvailable = deviceLockAvailable,
-                    onTestDevice = onTestDevice,
-                    onLockNow = onLockNow,
-                    onToast = onToast,
-                )
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    val forward = targetState > initialState
+                    if (targetStateIsBeingInitialized) {
+                        fadeIn(animationSpec = tween(300))
+                    } else {
+                        slideInHorizontally(
+                            initialX = { if (forward) width else -width },
+                            animationSpec = tween(300),
+                        ) + slideOutHorizontally(
+                            targetX = { if (forward) -width else width },
+                            animationSpec = tween(300),
+                        )
+                    }
+                },
+            ) { targetTab ->
+                when (targetTab) {
+                    0 -> HomeScreen(
+                        vm = vm,
+                        onNewGoal = { sheet = SheetState.NewGoal },
+                        onGoalClick = { sheet = SheetState.GoalOptions(it) },
+                    )
+                    1 -> HistoryScreen(vm = vm, onMoveClick = { sheet = SheetState.MoveOptions(it) })
+                    2 -> SettingsScreen(
+                        vm = vm,
+                        deviceLockAvailable = deviceLockAvailable,
+                        onTestDevice = onTestDevice,
+                        onLockNow = onLockNow,
+                        onToast = onToast,
+                    )
+                }
             }
         }
     }
