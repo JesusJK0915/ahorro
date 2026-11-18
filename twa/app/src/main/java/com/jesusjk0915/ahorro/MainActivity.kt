@@ -278,15 +278,14 @@ private fun AppContent(
                 targetState = tab,
                 transitionSpec = {
                     val forward = targetState > initialState
-                    val w = size.width
                     if (targetStateIsBeingInitialized) {
                         fadeIn(animationSpec = tween(300))
                     } else {
                         slideInHorizontally(
-                            initialX = { if (forward) w else -w },
+                            initialX = { size -> if (forward) size.width.toFloat() else -size.width.toFloat() },
                             animationSpec = tween(300),
                         ) + slideOutHorizontally(
-                            targetX = { if (forward) -w else w },
+                            targetX = { size -> if (forward) -size.width.toFloat() else size.width.toFloat() },
                             animationSpec = tween(300),
                         )
                     }
