@@ -77,13 +77,13 @@ fun Modifier.iosDockGlass(settings: Settings): Modifier {
             spotColor = cs.primary.copy(alpha = 0.35f),
         )
         .background(
-            Color.White.copy(alpha = if (opaque) 0.05f else 0.10f),
+            Color.White.copy(alpha = if (opaque) 0.04f else 0.06f),
             shape,
         )
         .background(
             Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = if (opaque) 0.14f else 0.30f),
+                    Color.White.copy(alpha = if (opaque) 0.12f else 0.22f),
                     Color.White.copy(alpha = 0.05f),
                     Color.Transparent,
                     cs.primary.copy(alpha = 0.08f),

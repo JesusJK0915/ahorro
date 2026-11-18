@@ -18,6 +18,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -40,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -197,6 +199,27 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
+            // Niebla de cristal: capa translúcida con desenfoque real (API 31+)
+            // que simula el vidrio esmerilado del liquid glass.
+            if (settings.glass) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    cs.primary.copy(alpha = 0.22f),
+                                    cs.secondary.copy(alpha = 0.16f),
+                                    cs.tertiary.copy(alpha = 0.12f),
+                                ),
+                            ),
+                            RoundedCornerShape(50),
+                        )
+                        .blur(18.dp)
+                        .clip(RoundedCornerShape(50)),
+                )
+            }
+
             if (ws[tab] > 0.dp && hs[tab] > 0.dp) {
                 Box(
                     modifier = Modifier
