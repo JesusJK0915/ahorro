@@ -42,22 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
-import kotlin.math.roundToInt
 import androidx.fragment.app.FragmentActivity
 
 private sealed interface SheetState {
@@ -278,9 +270,7 @@ private fun AppContent(
     var tab by remember { mutableIntStateOf(0) }
     var sheet by remember { mutableStateOf<SheetState?>(null) }
     var confirm by remember { mutableStateOf<ConfirmState?>(null) }
-    var dockBounds by remember { mutableStateOf<Rect?>(null) }
     val cs = MaterialTheme.colorScheme
-    val density = LocalDensity.current
 
     // Fondo ambiental animado: manchas de Material You bien difuminadas.
     // Le dan profundidad al cristal y algo de color que atravesar al blur.
@@ -357,36 +347,7 @@ private fun AppContent(
                 )
             }
         }
-        // Blur real del CSS: captura el contenido de abajo, lo desenfoca y lo
-        // dibuja recortado a la píldora, debajo del dock (backdrop-filter).
-        if (vm.ui.settings.glass && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            dockBounds?.let { b ->
-                AndroidView(
-                    factory = { BackdropBlurView(it) },
-                    modifier = Modifier
-                        .offset {
-                            IntOffset(b.left.roundToInt(), b.top.roundToInt())
-                        }
-                        .size(
-                            with(density) { b.width.toDp() },
-                            with(density) { b.height.toDp() },
-                        ),
-                    update = { view ->
-                        view.setRadius(24f, density.density)
-                        view.setTint(cs.surfaceContainer.toArgb(), 0.30f)
-                    },
-                )
-            }
-        }
-        Box(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .onGloballyPositioned { c ->
-                    val p = c.positionInParent()
-                    dockBounds = Rect(p.x, p.y, p.x + c.size.width, p.y + c.size.height)
-                },
-        ) {
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
             WebNavBar(settings = vm.ui.settings, tab = tab, onTab = { tab = it })
         }
     }

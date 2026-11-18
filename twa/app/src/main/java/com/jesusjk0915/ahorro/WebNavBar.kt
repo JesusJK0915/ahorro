@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -210,8 +211,26 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
-            // El desenfoque real lo dibuja BackdropBlurView desde MainActivity
-            // (captura del contenido detrás + RenderEffect), no una capa tintada.
+            // Niebla suave del cristal (blur de la capa, seguro con Compose).
+            if (settings.glass && hs[tab] > 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(hs[tab])
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.20f),
+                                    cs.primary.copy(alpha = 0.16f),
+                                    Color.Transparent,
+                                ),
+                            ),
+                            RoundedCornerShape(50),
+                        )
+                        .blur(14.dp)
+                        .clip(RoundedCornerShape(50)),
+                )
+            }
 
             if (ws[tab] > 0.dp && hs[tab] > 0.dp) {
                 Box(
