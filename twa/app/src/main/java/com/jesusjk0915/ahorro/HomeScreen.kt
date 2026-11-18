@@ -2,9 +2,12 @@ package com.jesusjk0915.ahorro
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,12 +42,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
+import kotlin.math.sin
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,7 +83,11 @@ private fun ProgressLine(value: Float, color: Color) {
     }
 }
 
-/** Barra de progreso con forma de ola, igual a la versión web. */
+/**
+ * Ola del hero, igual a la versión web: un rastro continuo y un tramo lleno
+ * cuyo ancho sube o baja con el porcentaje (spring, como el CSS de la web).
+ * Se dibuja la curva completa hasta el ancho exacto: sin recortes que parpadeen.
+ */
 @Composable
 private fun WaveProgress(value: Float, color: Color) {
     val infinite = rememberInfiniteTransition(label = "wave")
@@ -88,37 +95,45 @@ private fun WaveProgress(value: Float, color: Color) {
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = LinearEasing),
+            animation = tween(2000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "wavePhase",
     )
+    val fill by animateFloatAsState(
+        targetValue = value,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "waveFill",
+    )
+
     Canvas(Modifier.fillMaxWidth().height(18.dp)) {
         val center = size.height / 2f
-        val amp = size.height * 0.16f
-        val waveLen = 44f * density
-        val shift = phase * waveLen
-        fun wave(): Path {
+        val amp = size.height * 0.17f
+        val period = 44f * density
+        val shift = phase * period
+        val stroke = Stroke(width = size.height * 0.58f, cap = StrokeCap.Round)
+        val step = 2f * density
+
+        fun yAt(x: Float): Float = center + sin((x + shift) / period * 6.2831853f) * amp
+
+        fun wave(endX: Float): Path {
             val path = Path()
-            var x = -waveLen + shift
-            path.moveTo(x, center)
-            while (x < size.width + waveLen) {
-                path.cubicTo(
-                    x + waveLen * 0.25f, center - amp,
-                    x + waveLen * 0.75f, center + amp,
-                    x + waveLen, center,
-                )
-                x += waveLen
+            var x = 0f
+            path.moveTo(x, yAt(x))
+            while (x < endX) {
+                x = (x + step).coerceAtMost(endX)
+                path.lineTo(x, yAt(x))
             }
             return path
         }
-        val stroke = Stroke(width = size.height * 0.62f)
-        drawPath(wave(), color = color.copy(alpha = 0.20f), style = stroke)
-        val w = size.width * (value / 100f)
-        if (w > 0f) {
-            clipRect(right = w) {
-                drawPath(wave(), color = color, style = stroke)
-            }
+
+        drawPath(wave(size.width), color = color.copy(alpha = 0.20f), style = stroke)
+        val w = size.width * (fill / 100f)
+        if (w > 0.5f) {
+            drawPath(wave(w), color = color, style = stroke)
         }
     }
 }

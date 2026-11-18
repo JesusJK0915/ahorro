@@ -1,6 +1,5 @@
 package com.jesusjk0915.ahorro
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
@@ -14,8 +13,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
 /**
- * Cristal líquido estilo iOS: reflejo diagonal, borde luminoso, sombra suave
- * y transparencia ajustable. En "opaco" el vidrio es esmerilado casi sólido.
+ * Cristal líquido estilo iOS: borde luminoso y sombra suave, SIN relleno.
+ * Al no pintar fondo, lo que hay detrás se ve tal cual y el efecto es real.
+ * En "opaco" el borde y la sombra se atenúan.
  */
 @Composable
 fun Modifier.liquidGlass(
@@ -26,11 +26,6 @@ fun Modifier.liquidGlass(
 
     val cs = MaterialTheme.colorScheme
     val opaque = settings.glassStyle == "opaque"
-    val t = settings.glassTransparency.coerceIn(0, 100) / 100f
-    // 0% => casi sólido; 100% => muy translúcido.
-    val alpha = if (opaque) 1f else 1f - (t * 0.62f)
-    val glow = if (opaque) 0.06f else 0.16f
-    val base = if (opaque) cs.surfaceContainerHigh else cs.surfaceContainer
 
     return this
         .shadow(
@@ -38,16 +33,6 @@ fun Modifier.liquidGlass(
             shape = shape,
             ambientColor = Color.Black.copy(alpha = 0.42f),
             spotColor = cs.primary.copy(alpha = 0.28f),
-        )
-        .background(
-            brush = Brush.linearGradient(
-                colors = listOf(
-                    cs.primary.copy(alpha = glow),
-                    base.copy(alpha = alpha),
-                    cs.tertiary.copy(alpha = glow * 0.8f),
-                ),
-            ),
-            shape = shape,
         )
         .border(
             width = 1.dp,
