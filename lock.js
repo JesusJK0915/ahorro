@@ -144,13 +144,14 @@ function bioAvailable() {
   catch (_) { return false; }
 }
 function bioAsk() {
-  if (!bioAvailable()) return false;
+  if (lockCfg().method !== "biometric" || !bioAvailable()) return false;
   try { window.AndroidAuth.authenticate(); return true; }
   catch (_) { return false; }
 }
 window.onBiometricResult = (ok) => {
-  if (ok) unlockApp();
-  else lockFail();
+  if (!ok) { lockFail(); return; }
+  if (lockCfg().method !== "biometric") return;
+  unlockApp();
 };
 
 /* ---------------- configuración desde Ajustes ---------------- */
@@ -376,7 +377,7 @@ function showLock(mode) {
         <button class="text-btn" id="recBack">Volver</button>
       ` : `
         <div class="lock-input-host" id="lockInputHost"></div>
-        ${bioAvailable() ? `<button class="bio-btn" id="bioBtn">
+        ${cfg.method === "biometric" && bioAvailable() ? `<button class="bio-btn" id="bioBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4a8 8 0 0 0-8 8M12 20a8 8 0 0 0 8-8"/><path d="M12 8a4 4 0 0 0-4 4M12 16a4 4 0 0 0 4-4"/><path d="M12 12h.01"/></svg>
           <span>Usar huella</span>
         </button>` : ""}
