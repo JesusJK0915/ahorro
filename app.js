@@ -23,7 +23,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.1.2";
+const APP_VERSION = "1.1.3";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -51,6 +51,7 @@ function defaults() {
     theme: "dark",
     ringMode: false,
     dynamicColor: true,
+    glass: 72,
     currency: "COP",
     themeMode: "dark",
   };
@@ -68,6 +69,8 @@ function load() {
     p.goals = p.goals.filter((g) => g && typeof g.name === "string" && Number(g.target) > 0);
     if (typeof p.ringMode !== "boolean") p.ringMode = false;
     if (typeof p.dynamicColor !== "boolean") p.dynamicColor = true;
+    if (typeof p.glass !== "number" || !Number.isFinite(p.glass)) p.glass = 72;
+    p.glass = clamp(Math.round(p.glass), 0, 100);
     if (!p.currency) p.currency = "COP";
     p.themeMode = "dark";
     return p;
@@ -90,6 +93,24 @@ function applyThemeMode(mode) {
   state.theme = "dark";
   save();
   applyTheme("dark");
+}
+function glassWord(v) {
+  if (v < 30) return "Más opaco";
+  if (v < 70) return "Equilibrado";
+  return "Más cristal";
+}
+function applyGlass(v) {
+  const raw = Number(v ?? state.glass ?? 72);
+  const n = clamp(Number.isFinite(raw) ? Math.round(raw) : 72, 0, 100);
+  state.glass = n;
+  document.documentElement.style.setProperty("--glass", n);
+  const lbl = $("#glassLabel");
+  if (lbl) lbl.textContent = `${n}% · ${glassWord(n)}`;
+  const rng = $("#setGlass");
+  if (rng) {
+    rng.value = n;
+    rng.style.setProperty("--p", n);
+  }
 }
 function applyDynamic(on) {
   document.documentElement.dataset.dynamic = on ? "true" : "false";
@@ -490,6 +511,19 @@ function renderSettings() {
     </li>
     <li class="setting">
       <span class="setting-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16l-1.4 12a2 2 0 0 1-2 1.8H7.4a2 2 0 0 1-2-1.8L4 7z"/><path d="M3 7h18"/><path d="M8.5 11l1 6M14 11l.8 4"/></svg>
+      </span>
+      <div class="setting-body">
+        <strong>Efecto cristal</strong>
+        <span id="glassLabel">${state.glass}% · ${glassWord(state.glass)}</span>
+      </div>
+      <div class="setting-control">
+        <input type="range" class="glass-range" id="setGlass" min="0" max="100" step="1"
+          value="${state.glass}" style="--p:${state.glass}" aria-label="Intensidad del efecto cristal" />
+      </div>
+    </li>
+    <li class="setting">
+      <span class="setting-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       </span>
       <div class="setting-body">
@@ -543,6 +577,11 @@ function renderSettings() {
     render();
     renderSettings();
     buzz();
+  });
+  $("#setGlass", list).addEventListener("input", (e) => {
+    // No re-renderizamos: se cortaría el arrastre. applyGlass actualiza la etiqueta en vivo.
+    applyGlass(e.target.value);
+    save();
   });
   $("#setCurrency", list).addEventListener("change", (e) => {
     state.currency = e.target.value;
@@ -932,6 +971,8 @@ function placeIndicator() {
   if (!active || !ind) return;
   ind.style.left = active.offsetLeft + "px";
   ind.style.width = active.offsetWidth + "px";
+  // La lente del liquid glass se centra sobre la pestaña activa.
+  $(".navbar")?.style.setProperty("--gx", (active.offsetLeft + active.offsetWidth / 2) + "px");
 }
 
 $$(".nav-item").forEach((b) => b.addEventListener("click", () => switchView(b.dataset.view)));
@@ -1033,6 +1074,7 @@ $("#emptyCreate")?.addEventListener("click", () => openNewGoal());
 
 applyThemeMode(state.themeMode || "auto");
 applyDynamic(state.dynamicColor !== false);
+applyGlass(state.glass);
 if ($("#ringToggle")) $("#ringToggle").setAttribute("aria-pressed", state.ringMode ? "true" : "false");
 if ($("#dynamicToggle")) $("#dynamicToggle").setAttribute("aria-pressed", state.dynamicColor !== false ? "true" : "false");
 document.body.dataset.view = "goals";

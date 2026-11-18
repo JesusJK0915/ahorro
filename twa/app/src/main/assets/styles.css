@@ -44,6 +44,16 @@
   --r-lg: 24px;
   --r-md: 18px;
   --wave: 38px;
+
+  /* ============ liquid glass (0 = opaco, 100 = más cristal) ============ */
+  --glass: 72;
+  --glass-a: calc(92% - var(--glass) * 0.82%);
+  --glass-sheet-a: calc(96% - var(--glass) * 0.62%);
+  --glass-blur: calc(6px + var(--glass) * 0.28px);
+  --glass-sat: calc(110% + var(--glass) * 1.1%);
+  --glass-hi: calc(var(--glass) * 0.55%);
+  --glass-border: calc(8% + var(--glass) * 0.14%);
+  --wave-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='14' viewBox='0 0 38 14'%3E%3Cpath d='M0 7 Q9.5 3 19 7 T38 7' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 [data-theme="dark"] {
   color-scheme: dark;
@@ -548,30 +558,35 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   padding: 7px;
   gap: 4px;
   border-radius: 999px;
-  /* Liquid Glass (estilo iOS 26) */
-  background: color-mix(in srgb, var(--surface-container) 40%, transparent);
-  backdrop-filter: blur(28px) saturate(200%) brightness(1.12);
-  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.12);
-  border: 1px solid color-mix(in srgb, var(--on-surface) 10%, transparent);
+  /* Liquid Glass (iOS 26/27): refracción + reflejo + borde de lente */
+  background: color-mix(in srgb, var(--surface-container) var(--glass-a), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(1.08) contrast(1.05);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(1.08) contrast(1.05);
+  border: 1px solid color-mix(in srgb, var(--on-surface) var(--glass-border), transparent);
   box-shadow:
     0 16px 48px rgba(0, 0, 0, .20),
     0 4px 12px rgba(0, 0, 0, .10),
-    inset 0 1.5px 0 color-mix(in srgb, #ffffff 50%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, #000000 10%, transparent);
+    inset 0 1.5px 0 color-mix(in srgb, #ffffff var(--glass-hi), transparent),
+    inset 0 -1px 0 color-mix(in srgb, #000000 10%, transparent),
+    inset 0 0 24px color-mix(in srgb, var(--primary) calc(var(--glass) * 0.10%), transparent);
   z-index: 21;
   overflow: hidden;
   animation: navIn .7s var(--ease-spring) both .1s;
+  transition: background-color .35s var(--ease-emph), backdrop-filter .35s var(--ease-emph), border-color .35s;
 }
-/* reflejo especular superior (fuente de luz) */
+/* reflejo especular: fuente de luz + lente que sigue la pestaña activa */
 .navbar::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, #ffffff 45%, transparent) 0%,
-    color-mix(in srgb, #ffffff 12%, transparent) 25%,
-    transparent 55%);
+  background:
+    radial-gradient(circle 90px at var(--gx, 50%) 40%,
+      color-mix(in srgb, #ffffff calc(var(--glass) * 0.20%), transparent), transparent 78%),
+    linear-gradient(180deg,
+      color-mix(in srgb, #ffffff var(--glass-hi), transparent) 0%,
+      color-mix(in srgb, #ffffff calc(var(--glass) * 0.16%), transparent) 26%,
+      transparent 58%);
   pointer-events: none;
   z-index: 0;
 }
@@ -583,25 +598,22 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   border-radius: inherit;
   background: linear-gradient(100deg,
     transparent 0%,
-    color-mix(in srgb, #ffffff 22%, transparent) 40%,
-    transparent 70%);
-  transform: translateX(-130%);
+    color-mix(in srgb, #ffffff calc(var(--glass) * 0.26%), transparent) 38%,
+    color-mix(in srgb, var(--primary) calc(var(--glass) * 0.12%), transparent) 52%,
+    transparent 72%);
+  transform: translateX(-135%);
   animation: liquidSheen 7s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
 }
 .navbar > * { position: relative; z-index: 1; }
+/* Una sola definición: la duplicada anterior anulaba los fundidos del brillo. */
 @keyframes liquidSheen {
-  0% { transform: translateX(-130%) skewX(-15deg); opacity: 0; }
-  20% { opacity: 1; }
-  50% { transform: translateX(130%) skewX(-15deg); opacity: 1; }
-  80% { opacity: 0; }
-  100% { transform: translateX(130%) skewX(-15deg); opacity: 0; }
-}
-@keyframes liquidSheen {
-  0% { transform: translateX(-120%) skewX(-12deg); }
-  50% { transform: translateX(120%) skewX(-12deg); }
-  100% { transform: translateX(120%) skewX(-12deg); }
+  0%   { transform: translateX(-135%) skewX(-16deg); opacity: 0; }
+  18%  { opacity: .9; }
+  50%  { transform: translateX(125%) skewX(-16deg); opacity: .9; }
+  72%  { opacity: 0; }
+  100% { transform: translateX(125%) skewX(-16deg); opacity: 0; }
 }
 .nav-indicator {
   position: absolute;
@@ -670,11 +682,18 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   overflow-y: auto;
   transform: translate(-50%, 110%);
   border-radius: 30px 30px 0 0;
-  background: var(--surface-container-high);
-  box-shadow: 0 -14px 40px rgba(0, 0, 0, .22);
+  /* El sheet también es cristal, pero con un mínimo de opacidad para leer mejor. */
+  background: color-mix(in srgb, var(--surface-container-high) var(--glass-sheet-a), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(1.06);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(1.06);
+  border: 1px solid color-mix(in srgb, var(--on-surface) var(--glass-border), transparent);
+  border-bottom: 0;
+  box-shadow:
+    0 -14px 40px rgba(0, 0, 0, .22),
+    inset 0 1.5px 0 color-mix(in srgb, #ffffff var(--glass-hi), transparent);
   z-index: 41;
   padding: 10px 18px calc(24px + env(safe-area-inset-bottom));
-  transition: transform .55s var(--ease-emph), border-radius .4s var(--ease-spring);
+  transition: transform .55s var(--ease-emph), border-radius .4s var(--ease-spring), background-color .35s var(--ease-emph);
   overscroll-behavior: contain;
 }
 .sheet.open { transform: translate(-50%, 0); }
@@ -891,6 +910,45 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   transition: outline-color .25s var(--ease-emph);
 }
 .settings select:focus { outline-color: var(--primary); }
+
+/* barra de intensidad del cristal: misma onda que el ahorro total */
+.glass-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 116px;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+  --p: 72;
+}
+.glass-range::-webkit-slider-runnable-track {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg,
+    var(--primary) calc(var(--p) * 1%),
+    var(--surface-container-highest) calc(var(--p) * 1%));
+  -webkit-mask-image: var(--wave-svg);
+  mask-image: var(--wave-svg);
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-size: 38px 100%;
+  mask-size: 38px 100%;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25);
+}
+.glass-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #e2ecec 55%, #b7c6c6 100%);
+  border: 2px solid color-mix(in srgb, var(--primary) 70%, #ffffff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .4), inset 0 1px 1px #ffffff;
+  transition: transform .2s var(--ease-spring);
+}
+.glass-range:active::-webkit-slider-thumb { transform: scale(1.14); }
+.glass-range:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 999px; }
 
 /* ============ fx ============ */
 .fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
