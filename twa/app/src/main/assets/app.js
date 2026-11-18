@@ -25,7 +25,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.1.8";
+const APP_VERSION = "1.1.9";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -1170,25 +1170,52 @@ function maybeWelcome() {
   const el = document.createElement("div");
   el.className = "welcome";
   el.id = "welcome";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  el.setAttribute("aria-label", "Bienvenida a Ahorros");
   el.innerHTML = `
+    <div class="welcome-bg" aria-hidden="true">
+      <span class="wblob wblob-a"></span>
+      <span class="wblob wblob-b"></span>
+    </div>
     <div class="welcome-card">
       <div class="welcome-art" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/>
-          <path d="M16 12.5h2.5"/><path d="M12 3v3M6 3v3M18 3v3"/>
+          <path d="M3 9.5A3.5 3.5 0 0 1 6.5 6H18a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/>
+          <path d="M16 13h2.5"/><path d="M12 3v3M7.5 3v3M16.5 3v3"/>
+          <path d="M12 10v5M9.5 12.5h5"/>
         </svg>
       </div>
-      <h2>Tu dinero, con rumbo</h2>
-      <p>Crea metas, registra aportes y mira cómo crece tu ahorro. Todo se guarda en tu celular, sin cuentas ni internet.</p>
-      <button class="btn-filled press" id="welcomeStart">Empezar a ahorrar</button>
+      <div class="welcome-eyebrow">AHORROS · TU ESPACIO</div>
+      <h2>Tu dinero,<br><span>con rumbo.</span></h2>
+      <p>Crea metas, anota cada aporte y mira cómo crece tu ahorro. Sin cuentas, sin internet y solo en tu celular.</p>
+      <div class="welcome-features">
+        <div class="wf">
+          <span class="wf-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
+          <span><b>Metas claras</b><small>Define cuánto quieres alcanzar.</small></span>
+        </div>
+        <div class="wf">
+          <span class="wf-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></span>
+          <span><b>Cada aporte cuenta</b><small>Registra entradas y retiros.</small></span>
+        </div>
+        <div class="wf">
+          <span class="wf-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <span><b>Tuyo y privado</b><small>Todo queda en tu dispositivo.</small></span>
+        </div>
+      </div>
+      <button class="btn-filled press" id="welcomeStart">Crear mi primera meta</button>
+      <button class="text-btn" id="welcomeExplore">Explorar la app</button>
     </div>`;
   document.body.appendChild(el);
-  $("#welcomeStart", el).addEventListener("click", () => {
+
+  const dismiss = (next) => {
     try { localStorage.setItem(WELCOME_KEY, "1"); } catch {}
     el.classList.add("welcome-out");
-    setTimeout(() => el.remove(), 480);
     buzz(20);
-  });
+    setTimeout(() => { el.remove(); if (next) next(); }, 480);
+  };
+  $("#welcomeStart", el).addEventListener("click", once(() => dismiss(() => openNewGoal())));
+  $("#welcomeExplore", el).addEventListener("click", once(() => dismiss()));
 }
 maybeWelcome();
 
