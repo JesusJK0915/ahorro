@@ -59,7 +59,7 @@ fun AmountField(label: String, value: String, onChange: (String) -> Unit) {
         value = shown,
         onValueChange = { text -> onChange(text.filter { it.isDigit() }) },
         label = { Text(label) },
-        prefix = { Text("$  ") },
+        prefix = { Text("\$  ") },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth(),
@@ -176,9 +176,11 @@ fun PatternPad(onComplete: (List<Int>) -> Unit) {
             }
             repeat(9) { i ->
                 val on = seq.contains(i)
+                val xDp = ((i % 3) * 72 + 24).dp
+                val yDp = ((i / 3) * 72 + 24).dp
                 Box(
                     modifier = Modifier
-                        .offset(x = (i % 3) * 72.dp + 24.dp, y = (i / 3) * 72.dp + 24.dp)
+                        .offset(x = xDp, y = yDp)
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(if (on) primary else MaterialTheme.colorScheme.surfaceVariant)
