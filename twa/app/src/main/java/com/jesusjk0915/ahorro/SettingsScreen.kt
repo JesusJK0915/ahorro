@@ -30,7 +30,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,8 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import android.app.TimePickerDialog
-import java.util.Calendar
 
 @Composable
 fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
@@ -183,8 +180,6 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(18.dp))
         Text("Notificaciones", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        var timePickerOpen by remember { mutableStateOf(false) }
-        var reminderHour by remember { mutableStateOf(settings.dailyReminderHour) }
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(18.dp),
@@ -198,21 +193,16 @@ fun SettingsScreen(
                 }
                 if (settings.notifications) {
                     Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "Recordatorio diario: ${String.format("%02d:00", settings.dailyReminderHour)}",
-                            style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f),
-                        )
-                        OutlinedButton(onClick = {
-                            reminderHour = settings.dailyReminderHour
-                            timePickerOpen = true
-                        }) {
-                            Text("Cambiar hora")
-                        }
-                    }
+                    Text(
+                        "Recordatorio diario: ${String.format("%02d:00", settings.dailyReminderHour)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Se activa a las ${String.format("%02d:00", settings.dailyReminderHour)} todos los días.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -336,18 +326,6 @@ fun SettingsScreen(
             confirmButton = {},
             dismissButton = { TextButton(onClick = { patternSetup = false; firstPattern = emptyList() }) { Text("Cancelar") } },
         )
-    }
-
-    LaunchedEffect(timePickerOpen) {
-        if (timePickerOpen) {
-            val ctx = LocalContext.current
-            TimePickerDialog(ctx, { hour, minute ->
-                reminderHour = hour
-                vm.setDailyReminderHour(hour)
-                DailyReminderReceiver(ctx).schedule(ctx, hour)
-                timePickerOpen = false
-            }, settings.dailyReminderHour, true).show()
-        }
     }
 }
 
