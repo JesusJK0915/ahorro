@@ -12,7 +12,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
-const val CURRENT_VERSION = "2.4.2"
+const val CURRENT_VERSION = "2.4.3"
 const val VERSION_URL = "https://JesusJK0915.github.io/ahorro/version.json"
 const val INSTALL_ACTION = "ahorro.INSTALL_RESULT"
 
