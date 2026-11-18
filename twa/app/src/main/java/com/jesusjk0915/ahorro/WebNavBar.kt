@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -42,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -114,7 +114,6 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(3600, easing = LinearEasing),
-            initialDelay = 700,
             repeatMode = RepeatMode.Restart,
         ),
         label = "sheenPos",
@@ -148,6 +147,21 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                 .widthIn(max = 492.dp)
                 .liquidGlass(settings, shape = RoundedCornerShape(50))
                 .padding(7.dp)
+                .clip(RoundedCornerShape(50))
+                .drawBehind {
+                    val x = sheen * size.width
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.12f),
+                                Color.Transparent,
+                            ),
+                            start = Offset(x - size.width * 0.3f, 0f),
+                            end = Offset(x + size.width * 0.3f, size.height),
+                        ),
+                    )
+                }
                 .graphicsLayer {
                     alpha = enter
                     translationY = (1f - enter) * enterOffset
@@ -156,25 +170,6 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
-            Canvas(
-                Modifier
-                    .matchParentSize()
-                    .clip(RoundedCornerShape(50)),
-            ) {
-                val x = sheen * size.width
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.12f),
-                            Color.Transparent,
-                        ),
-                        start = Offset(x - size.width * 0.3f, 0f),
-                        end = Offset(x + size.width * 0.3f, size.height),
-                    ),
-                )
-            }
-
             if (ws[tab] > 0.dp && hs[tab] > 0.dp) {
                 Box(
                     modifier = Modifier
