@@ -48,8 +48,9 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     val density = LocalDensity.current
     var pillWidth by remember { mutableStateOf(0.dp) }
 
-    val inner = (pillWidth - 14.dp).coerceAtLeast(0.dp)
-    val itemW = inner / 3f
+    // El Row reparte todo el ancho de la píldora entre 3 pestañas; el indicador
+    // debe usar exactamente el mismo ancho para quedar alineado.
+    val itemW = (pillWidth / 3f).coerceAtLeast(0.dp)
     val target = itemW * tab.toFloat()
     val indicatorX by animateDpAsState(
         targetValue = target,
@@ -64,12 +65,12 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     )
 
     Box(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Box(
             modifier = Modifier
-                .padding(horizontal = 14.dp)
+                .padding(horizontal = 20.dp)
                 .height(58.dp)
                 .onSizeChanged { pillWidth = with(density) { it.width.toDp() } }
                 .liquidGlass(settings, shape = RoundedCornerShape(50)),
