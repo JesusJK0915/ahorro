@@ -36,7 +36,8 @@
             android:name="LauncherActivity"
             android:label="@string/launcherName"
             android:exported="true"
-            android:configChanges="orientation|screenSize|uiMode">
+            android:configChanges="orientation|screenSize|uiMode"
+            android:windowSoftInputMode="adjustResize|stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

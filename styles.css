@@ -697,6 +697,13 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   overscroll-behavior: contain;
 }
 .sheet.open { transform: translate(-50%, 0); }
+/* Con el teclado abierto, el sheet se sube y se encoge para ver lo escrito. */
+body.kb-open .sheet.open {
+  transform: translate(-50%, calc(-1 * var(--kb, 0px)));
+  max-height: calc(100dvh - var(--kb, 0px) - 12px);
+  transition-duration: .18s;
+}
+body.kb-open .scrim { opacity: .22; }
 .sheet-handle {
   width: 44px;
   height: 5px;

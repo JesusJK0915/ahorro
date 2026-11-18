@@ -25,7 +25,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.1.9";
+const APP_VERSION = "1.2.0";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -769,6 +769,37 @@ function closeSheet() {
 }
 
 scrimEl.addEventListener("click", closeSheet);
+
+/* ------------------------- teclado: subir lo que se está escribiendo ------------------------- */
+(function keyboardAware() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  let lastInset = 0;
+  const update = () => {
+    // Alto ocupado por el teclado, incluso si el WebView no redimensiona el layout.
+    const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    if (inset === lastInset) return;
+    lastInset = inset;
+    document.documentElement.style.setProperty("--kb", inset + "px");
+    document.body.classList.toggle("kb-open", inset > 120);
+    if (inset > 120) {
+      const active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
+        setTimeout(() => {
+          try { active.scrollIntoView({ block: "center", behavior: "smooth" }); }
+          catch (_) { active.scrollIntoView(); }
+        }, 140);
+      }
+    }
+  };
+  vv.addEventListener("resize", update);
+  vv.addEventListener("scroll", update);
+  window.addEventListener("resize", update);
+  document.addEventListener("focusin", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) update();
+  }, true);
+  update();
+})();
 
 /* ------------------------- gestos: deslizar para cambiar de apartado ------------------------- */
 const VIEWS = ["goals", "history", "settings"];
