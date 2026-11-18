@@ -15,6 +15,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -28,7 +30,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.awaitPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.content.ContextCompat
+import kotlin.math.abs
 import androidx.fragment.app.FragmentActivity
 
 private sealed interface SheetState {
@@ -42,6 +48,34 @@ private sealed interface SheetState {
 }
 
 private data class ConfirmState(val title: String, val text: String, val action: () -> Unit)
+
+/**
+ * Gesto de la versión web: deslizar horizontal para cambiar de apartado.
+ * Sólo si el gesto es claramente horizontal (55px y 1.4x el movimiento vertical)
+ * y no hay ninguna hoja o diálogo abierto. Deslizar a la izquierda avanza.
+ */
+private fun Modifier.swipeBetweenTabs(
+    enabled: Boolean,
+    tab: Int,
+    onTab: (Int) -> Unit,
+): Modifier = pointerInput(enabled, tab) {
+    if (!enabled) return@pointerInput
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            if (event.changes.none { it.pressed }) break
+            val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+            val dx = change.position.x - down.position.x
+            val dy = change.position.y - down.position.y
+            if (abs(dx) >= 55f && abs(dx) >= abs(dy) * 1.4f) {
+                val next = tab + if (dx > 0f) -1 else 1
+                if (next in 0..2) onTab(next)
+                break
+            }
+        }
+    }
+}
 
 class MainActivity : FragmentActivity() {
     private val vm: AppViewModel by viewModels()
@@ -216,7 +250,16 @@ private fun AppContent(
             WebNavBar(settings = vm.ui.settings, tab = tab, onTab = { tab = it })
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .swipeBetweenTabs(
+                    enabled = sheet == null && confirm == null,
+                    tab = tab,
+                    onTab = { tab = it },
+                ),
+        ) {
             when (tab) {
                 0 -> HomeScreen(
                     vm = vm,

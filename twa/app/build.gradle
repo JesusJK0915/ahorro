@@ -10,8 +10,8 @@ android {
         applicationId "com.jesusjk0915.ahorro"
         minSdk 24
         targetSdk 36
-        versionCode 200800
-        versionName "2.0.8"
+        versionCode 200900
+        versionName "2.0.9"
 
         resValue "string", "appName", "Ahorros"
         resValue "string", "launcherName", "Ahorros"
