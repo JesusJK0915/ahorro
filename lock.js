@@ -162,10 +162,16 @@ function finishLock(patch, announce) {
   lockUnlocked = true;
   renderSettings();
   if (announce) {
+    const isDevice = state.lock.method === "biometric";
     openSheet("Bloqueo activado", "Guarda este código de rescate: sirve para entrar si olvidas tu clave.", `
       <div class="recovery-code">${code}</div>
       <p class="lock-note">Anótalo o compártelo con alguien de confianza. No se puede recuperar de otra forma.</p>
-      <button class="btn-filled press" data-close>Entendido</button>`, () => {});
+      <button class="btn-filled press" id="lockDone">${isDevice ? "Entendido y probar" : "Entendido"}</button>`, (body, close) => {
+      body.querySelector("#lockDone")?.addEventListener("click", once(() => {
+        close();
+        if (isDevice) setTimeout(askDeviceLock, 220);
+      }));
+    });
   }
   buzz(25);
 }
