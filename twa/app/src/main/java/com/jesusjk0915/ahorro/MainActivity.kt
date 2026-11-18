@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.core.content.ContextCompat
@@ -102,6 +103,13 @@ class MainActivity : FragmentActivity() {
             BiometricManager.Authenticators.BIOMETRIC_WEAK or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
         ) == BiometricManager.BIOMETRIC_SUCCESS
+
+        NotificationHelper.init(this)
+        if (vm.ui.settings.notifications) {
+            DailyReminderReceiver().schedule(this, vm.ui.settings.dailyReminderHour)
+        } else {
+            DailyReminderReceiver().cancel(this)
+        }
 
         val lockedState = mutableStateOf(vm.ui.settings.security != "none")
         val welcomeState = mutableStateOf(!vm.welcomeSeen())
@@ -316,7 +324,16 @@ private fun AppContent(
             title = "Añadir dinero",
             subtitle = s.goal.name,
             confirmLabel = "Añadir",
-            onConfirm = { amount -> vm.deposit(s.goal.id, amount); sheet = null; onToast("Aporte registrado") },
+            onConfirm = { amount ->
+                val goal = vm.ui.goals.firstOrNull { it.id == s.goal.id }
+                vm.deposit(s.goal.id, amount)
+                sheet = null
+                onToast("Aporte registrado")
+                if (goal != null && goal.saved + amount >= goal.target && vm.ui.settings.notifications) {
+                    val ctx = LocalContext.current
+                    NotificationHelper.notifyGoalCompleted(ctx, goal.name, goal.saved + amount, goal.target)
+                }
+            },
             onDismiss = { sheet = null },
         )
         is SheetState.Withdraw -> AmountSheet(
