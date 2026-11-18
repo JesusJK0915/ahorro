@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -199,12 +198,13 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
-            // Niebla de cristal: cubre exactamente el dock (matchParentSize)
-            // y aplica desenfoque real; con fillMaxSize media 0dp y no se veía.
+            // Niebla de cristal: usa la altura ya medida del contenido para
+            // cubrir el dock y aplicar desenfoque real.
             if (settings.glass) {
                 Box(
                     modifier = Modifier
-                        .matchParentSize()
+                        .fillMaxWidth()
+                        .height(hs[tab])
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
