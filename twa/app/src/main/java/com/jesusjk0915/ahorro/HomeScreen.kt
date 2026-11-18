@@ -33,7 +33,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -143,7 +142,6 @@ fun HomeScreen(
     vm: AppViewModel,
     onNewGoal: () -> Unit,
     onGoalClick: (Goal) -> Unit,
-    onSettings: () -> Unit,
 ) {
     val state = vm.ui
     val totalSaved = state.goals.sumOf { it.saved }
@@ -321,17 +319,15 @@ fun HomeScreen(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(12.dp))
-                    Text("Aún no tienes metas", style = MaterialTheme.typography.titleMedium)
+                    Text("Sin metas todavía", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Crea tu primera meta y empieza a guardar dinero hoy.",
+                        "Crea tu primera meta y mira cómo crece el progreso.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(16.dp))
                     Button(onClick = onNewGoal) { Text("Crear mi primera meta") }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedButton(onClick = onSettings) { Text("Explorar la app") }
                 }
             }
         } else {

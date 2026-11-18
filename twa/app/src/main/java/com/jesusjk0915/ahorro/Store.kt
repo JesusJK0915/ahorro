@@ -13,6 +13,7 @@ import java.util.UUID
 
 private const val PREFS_DATA = "ahorro_data_v2"
 private const val KEY_STATE = "state"
+private const val KEY_WELCOME = "welcome_seen"
 
 fun lockHash(value: String): String {
     return try {
@@ -26,6 +27,12 @@ fun lockHash(value: String): String {
 
 class Store(private val context: Context) {
     private val prefs = context.getSharedPreferences(PREFS_DATA, Context.MODE_PRIVATE)
+
+    fun welcomeSeen(): Boolean = prefs.getBoolean(KEY_WELCOME, false)
+
+    fun markWelcomeSeen() {
+        prefs.edit().putBoolean(KEY_WELCOME, true).apply()
+    }
 
     fun load(): AppState {
         val raw = prefs.getString(KEY_STATE, null) ?: return AppState()
@@ -132,6 +139,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun refresh() {
         ui = ui.copy()
     }
+
+    fun welcomeSeen(): Boolean = store.welcomeSeen()
+
+    fun markWelcomeSeen() = store.markWelcomeSeen()
 
     private fun commit(next: AppState) {
         ui = next

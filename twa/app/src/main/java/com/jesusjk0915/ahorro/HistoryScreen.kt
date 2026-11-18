@@ -120,16 +120,11 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             Text(
-                "${moves.size} movimientos",
+                if (moves.isEmpty()) "" else "${moves.size} mov.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(
-            "Todos tus aportes y retiros",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         Spacer(Modifier.height(16.dp))
 
         DropdownField("Meta", goalLabels, goalLabel) { goalLabel = it }

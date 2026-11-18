@@ -1,6 +1,6 @@
 package com.jesusjk0915.ahorro
 
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.sp
 /** Icono "anillo" de Metas, igual al SVG de la web (dos círculos concéntricos). */
 @Composable
 private fun TargetIcon(tint: Color) {
-    Canvas(Modifier.size(26.dp)) {
+    Canvas(Modifier.size(20.dp)) {
         val s = size.minDimension / 24f
         val stroke = 2f * s
         drawCircle(color = tint, radius = 8.5f * s, style = Stroke(stroke))
@@ -69,7 +69,7 @@ private fun TargetIcon(tint: Color) {
 /** Icono de Historial, igual al SVG de la web (tres líneas, la última más corta). */
 @Composable
 private fun ListIcon(tint: Color) {
-    Canvas(Modifier.size(26.dp)) {
+    Canvas(Modifier.size(20.dp)) {
         val s = size.minDimension / 24f
         val stroke = 2f * s
         drawLine(tint, Offset(4f * s, 7f * s), Offset(20f * s, 7f * s), stroke)
@@ -113,7 +113,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
         initialValue = -1f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3600, easing = LinearEasing),
+            animation = tween(7000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart,
         ),
         label = "sheenPos",
@@ -154,7 +154,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         brush = Brush.linearGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.White.copy(alpha = 0.12f),
+                                Color.White.copy(alpha = 0.18f),
                                 Color.Transparent,
                             ),
                             start = Offset(x - size.width * 0.3f, 0f),
@@ -177,7 +177,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         .offset(x = indicatorX)
                         .width(indicatorW)
                         .height(hs[tab])
-                        .background(cs.primaryContainer.copy(alpha = 0.14f), RoundedCornerShape(50)),
+                        .background(cs.primaryContainer, RoundedCornerShape(50)),
                 )
             }
 
@@ -191,7 +191,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     val interaction = remember { MutableInteractionSource() }
                     val pressed by interaction.collectIsPressedAsState()
                     val pressScale by animateFloatAsState(
-                        targetValue = if (pressed) 0.94f else 1f,
+                        targetValue = if (pressed) 0.96f else 1f,
                         animationSpec = bouncy,
                         label = "press$index",
                     )
@@ -238,7 +238,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                                 else -> Icon(
                                     Icons.Default.Settings,
                                     contentDescription = null,
-                                    modifier = Modifier.size(26.dp),
+                                    modifier = Modifier.size(20.dp),
                                     tint = tint,
                                 )
                             }

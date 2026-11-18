@@ -102,6 +102,7 @@ class MainActivity : FragmentActivity() {
         ) == BiometricManager.BIOMETRIC_SUCCESS
 
         val lockedState = mutableStateOf(vm.ui.settings.security != "none")
+        val welcomeState = mutableStateOf(!vm.welcomeSeen())
 
         setContent {
             val locked by lockedState
@@ -135,6 +136,14 @@ class MainActivity : FragmentActivity() {
                             },
                             onLockNow = { lockedState.value = true },
                             deviceLockAvailable = deviceLockAvailable,
+                        )
+                    }
+                    if (!locked && welcomeState.value) {
+                        WelcomeScreen(
+                            onDismiss = {
+                                vm.markWelcomeSeen()
+                                welcomeState.value = false
+                            },
                         )
                     }
                 }
@@ -264,7 +273,6 @@ private fun AppContent(
                     vm = vm,
                     onNewGoal = { sheet = SheetState.NewGoal },
                     onGoalClick = { sheet = SheetState.GoalOptions(it) },
-                    onSettings = { tab = 2 },
                 )
                 1 -> HistoryScreen(vm = vm, onMoveClick = { sheet = SheetState.MoveOptions(it) })
                 2 -> SettingsScreen(
