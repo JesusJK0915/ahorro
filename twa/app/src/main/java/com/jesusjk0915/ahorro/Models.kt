@@ -24,6 +24,8 @@ data class Settings(
     val ringMode: Boolean = true,
     val dynamicColor: Boolean = true,
     val glass: Boolean = false,
+    val glassTransparency: Int = 60, // 0 = casi sólido, 100 = muy translúcido
+    val glassStyle: String = "transparent", // transparent | opaque
     val security: String = "none", // none | device | pin | pattern
     val pinHash: String = "",
     val patternHash: String = "",

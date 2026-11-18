@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -107,7 +106,10 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
         Spacer(Modifier.height(12.dp))
 
         if (moves.isEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().liquidGlass(state.settings),
+                colors = lowCardColors(state.settings),
+            ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -141,7 +143,7 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
             Spacer(Modifier.height(6.dp))
             LazyColumn(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
                 items(moves, key = { it.id }) { m ->
-                    MoveRow(m, onMoveClick)
+                    MoveRow(m, state.settings, onMoveClick)
                 }
             }
         }
@@ -150,11 +152,11 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
 }
 
 @Composable
-private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
+private fun MoveRow(m: Move, settings: Settings, onClick: (Move) -> Unit) {
     val color = if (m.withdraw) MaterialTheme.colorScheme.error else tintAt(m.tint)
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick(m) },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth().clickable { onClick(m) }.liquidGlass(settings),
+        colors = lowCardColors(settings),
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(

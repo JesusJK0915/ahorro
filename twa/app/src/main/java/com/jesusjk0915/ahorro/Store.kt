@@ -67,6 +67,8 @@ class Store(private val context: Context) {
                 ringMode = so.optBoolean("ringMode", true),
                 dynamicColor = so.optBoolean("dynamicColor", true),
                 glass = so.optBoolean("glass", false),
+                glassTransparency = so.optInt("glassTransparency", 60),
+                glassStyle = so.optString("glassStyle", "transparent"),
                 security = so.optString("security", "none"),
                 pinHash = so.optString("pinHash", ""),
                 patternHash = so.optString("patternHash", ""),
@@ -105,6 +107,8 @@ class Store(private val context: Context) {
                     .put("ringMode", st.ringMode)
                     .put("dynamicColor", st.dynamicColor)
                     .put("glass", st.glass)
+                    .put("glassTransparency", st.glassTransparency)
+                    .put("glassStyle", st.glassStyle)
                     .put("security", st.security)
                     .put("pinHash", st.pinHash)
                     .put("patternHash", st.patternHash)
@@ -230,6 +234,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setRingMode(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(ringMode = v)))
     fun setDynamicColor(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(dynamicColor = v)))
     fun setGlass(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(glass = v)))
+    fun setGlassTransparency(v: Int) =
+        commit(ui.copy(settings = ui.settings.copy(glassTransparency = v.coerceIn(0, 100))))
+    fun setGlassStyle(v: String) = commit(ui.copy(settings = ui.settings.copy(glassStyle = v)))
     fun setSecurity(method: String) = commit(ui.copy(settings = ui.settings.copy(security = method)))
     fun setPin(pin: String) = commit(ui.copy(settings = ui.settings.copy(pinHash = lockHash(pin))))
     fun setPattern(seq: List<Int>) = commit(

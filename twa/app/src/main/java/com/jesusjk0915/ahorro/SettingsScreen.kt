@@ -19,10 +19,11 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -82,21 +83,63 @@ fun SettingsScreen(
 
         Text("Apariencia", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            modifier = Modifier.fillMaxWidth().liquidGlass(settings),
+            colors = lowCardColors(settings),
         ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 SwitchRow("Progreso circular", settings.ringMode) { vm.setRingMode(it) }
                 SwitchRow("Colores del fondo de pantalla", settings.dynamicColor) { vm.setDynamicColor(it) }
-                SwitchRow("Efecto cristal", settings.glass) { vm.setGlass(it) }
+                SwitchRow("Cristal líquido", settings.glass) { vm.setGlass(it) }
+                if (settings.glass) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Estilo",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = settings.glassStyle == "transparent",
+                            onClick = { vm.setGlassStyle("transparent") },
+                            label = { Text("Liquido Transparente") },
+                        )
+                        FilterChip(
+                            selected = settings.glassStyle == "opaque",
+                            onClick = { vm.setGlassStyle("opaque") },
+                            label = { Text("Liquido Opaco") },
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Transparencia: ${settings.glassTransparency}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Slider(
+                        value = settings.glassTransparency.toFloat(),
+                        onValueChange = { vm.setGlassTransparency(it.toInt()) },
+                        valueRange = 0f..100f,
+                        enabled = settings.glassStyle == "transparent",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (settings.glassStyle == "opaque") {
+                        Text(
+                            "Liquido Opaco deja el vidrio esmerilado.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
             }
         }
 
         Spacer(Modifier.height(18.dp))
         Text("Seguridad", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            modifier = Modifier.fillMaxWidth().liquidGlass(settings),
+            colors = lowCardColors(settings),
         ) {
             Column(Modifier.padding(16.dp)) {
                 SecurityOption("Sin bloqueo", settings.security == "none") { vm.setSecurity("none") }
@@ -131,8 +174,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(18.dp))
         Text("Actualizaciones", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            modifier = Modifier.fillMaxWidth().liquidGlass(settings),
+            colors = lowCardColors(settings),
         ) {
             Column(Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
