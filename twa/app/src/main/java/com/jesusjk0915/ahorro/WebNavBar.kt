@@ -57,8 +57,8 @@ import androidx.compose.ui.unit.sp
 
 /** Icono "anillo" de Metas, igual al SVG de la web (dos círculos concéntricos). */
 @Composable
-private fun TargetIcon(tint: Color, size: Dp = 20.dp) {
-    Canvas(Modifier.size(size)) {
+private fun TargetIcon(tint: Color, iconSize: Dp = 20.dp) {
+    Canvas(Modifier.size(iconSize)) {
         val s = size.minDimension / 24f
         val stroke = 2f * s
         drawCircle(color = tint, radius = 8.5f * s, style = Stroke(stroke))
@@ -68,8 +68,8 @@ private fun TargetIcon(tint: Color, size: Dp = 20.dp) {
 
 /** Icono de Historial, igual al SVG de la web (tres líneas, la última más corta). */
 @Composable
-private fun ListIcon(tint: Color, size: Dp = 20.dp) {
-    Canvas(Modifier.size(size)) {
+private fun ListIcon(tint: Color, iconSize: Dp = 20.dp) {
+    Canvas(Modifier.size(iconSize)) {
         val s = size.minDimension / 24f
         val stroke = 2f * s
         drawLine(tint, Offset(4f * s, 7f * s), Offset(20f * s, 7f * s), stroke)
