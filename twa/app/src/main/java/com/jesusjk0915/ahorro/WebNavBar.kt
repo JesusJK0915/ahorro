@@ -57,8 +57,8 @@ import androidx.compose.ui.unit.sp
 
 /** Icono "anillo" de Metas, igual al SVG de la web (dos círculos concéntricos). */
 @Composable
-private fun TargetIcon(tint: Color) {
-    Canvas(Modifier.size(20.dp)) {
+private fun TargetIcon(tint: Color, size: Dp = 20.dp) {
+    Canvas(Modifier.size(size)) {
         val s = size.minDimension / 24f
         val stroke = 2f * s
         drawCircle(color = tint, radius = 8.5f * s, style = Stroke(stroke))
@@ -68,8 +68,8 @@ private fun TargetIcon(tint: Color) {
 
 /** Icono de Historial, igual al SVG de la web (tres líneas, la última más corta). */
 @Composable
-private fun ListIcon(tint: Color) {
-    Canvas(Modifier.size(20.dp)) {
+private fun ListIcon(tint: Color, size: Dp = 20.dp) {
+    Canvas(Modifier.size(size)) {
         val s = size.minDimension / 24f
         val stroke = 2f * s
         drawLine(tint, Offset(4f * s, 7f * s), Offset(20f * s, 7f * s), stroke)
@@ -136,6 +136,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     )
 
     val labels = listOf("Metas", "Historial", "Ajustes")
+    val iconSize = if (settings.hideDockLabels) 28.dp else 20.dp
 
     Box(
         modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
@@ -184,7 +185,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = if (settings.hideDockLabels) {
-                    Arrangement.Center
+                    Arrangement.spacedBy(20.dp)
                 } else {
                     Arrangement.spacedBy(4.dp)
                 },
@@ -236,12 +237,12 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                             contentAlignment = Alignment.Center,
                         ) {
                             when (index) {
-                                0 -> TargetIcon(tint)
-                                1 -> ListIcon(tint)
+                                0 -> TargetIcon(tint, iconSize)
+                                1 -> ListIcon(tint, iconSize)
                                 else -> Icon(
                                     Icons.Default.Settings,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(iconSize),
                                     tint = tint,
                                 )
                             }
