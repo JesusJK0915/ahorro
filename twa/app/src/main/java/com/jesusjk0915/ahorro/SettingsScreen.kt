@@ -135,6 +135,9 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(6.dp))
                 }
+                SwitchRow("Quitar nombres de el dock", settings.hideDockLabels) {
+                    vm.setHideDockLabels(it)
+                }
             }
         }
 

@@ -26,6 +26,7 @@ data class Settings(
     val glass: Boolean = false,
     val glassTransparency: Int = 60, // 0 = casi sólido, 100 = muy translúcido
     val glassStyle: String = "transparent", // transparent | opaque
+    val hideDockLabels: Boolean = false, // true = solo iconos en el dock
     val security: String = "none", // none | device | pin | pattern
     val pinHash: String = "",
     val patternHash: String = "",

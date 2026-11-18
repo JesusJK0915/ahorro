@@ -76,6 +76,7 @@ class Store(private val context: Context) {
                 glass = so.optBoolean("glass", false),
                 glassTransparency = so.optInt("glassTransparency", 60),
                 glassStyle = so.optString("glassStyle", "transparent"),
+                hideDockLabels = so.optBoolean("hideDockLabels", false),
                 security = so.optString("security", "none"),
                 pinHash = so.optString("pinHash", ""),
                 patternHash = so.optString("patternHash", ""),
@@ -116,6 +117,7 @@ class Store(private val context: Context) {
                     .put("glass", st.glass)
                     .put("glassTransparency", st.glassTransparency)
                     .put("glassStyle", st.glassStyle)
+                    .put("hideDockLabels", st.hideDockLabels)
                     .put("security", st.security)
                     .put("pinHash", st.pinHash)
                     .put("patternHash", st.patternHash)
@@ -248,6 +250,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setGlassTransparency(v: Int) =
         commit(ui.copy(settings = ui.settings.copy(glassTransparency = v.coerceIn(0, 100))))
     fun setGlassStyle(v: String) = commit(ui.copy(settings = ui.settings.copy(glassStyle = v)))
+    fun setHideDockLabels(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(hideDockLabels = v)))
     fun setSecurity(method: String) = commit(ui.copy(settings = ui.settings.copy(security = method)))
     fun setPin(pin: String) = commit(ui.copy(settings = ui.settings.copy(pinHash = lockHash(pin))))
     fun setPattern(seq: List<Int>) = commit(

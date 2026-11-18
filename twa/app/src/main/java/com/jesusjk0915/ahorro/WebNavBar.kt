@@ -243,13 +243,15 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                                 )
                             }
                         }
-                        Text(
-                            label,
-                            color = tint,
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                        )
+                        if (!settings.hideDockLabels) {
+                            Text(
+                                label,
+                                color = tint,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }

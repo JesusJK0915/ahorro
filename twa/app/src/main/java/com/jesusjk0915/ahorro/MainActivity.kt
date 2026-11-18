@@ -60,11 +60,13 @@ private fun Modifier.swipeBetweenTabs(
 ): Modifier = pointerInput(enabled, tab) {
     if (!enabled) return@pointerInput
     awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        val down = awaitFirstDown(requireUnconsumed = true, pass = PointerEventPass.Main)
         while (true) {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val event = awaitPointerEvent(PointerEventPass.Main)
             if (event.changes.none { it.pressed }) break
             val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+            // Un control hijo (por ejemplo el slider de transparencia) ya tomó el gesto.
+            if (change.isConsumed) break
             val dx = change.position.x - down.position.x
             val dy = change.position.y - down.position.y
             if (abs(dx) >= 55f && abs(dx) >= abs(dy) * 1.4f) {
