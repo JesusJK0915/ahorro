@@ -106,10 +106,7 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
         Spacer(Modifier.height(12.dp))
 
         if (moves.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth().liquidGlass(state.settings),
-                colors = lowCardColors(state.settings),
-            ) {
+            Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -143,7 +140,7 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
             Spacer(Modifier.height(6.dp))
             LazyColumn(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
                 items(moves, key = { it.id }) { m ->
-                    MoveRow(m, state.settings, onMoveClick)
+                    MoveRow(m, onMoveClick)
                 }
             }
         }
@@ -152,12 +149,9 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
 }
 
 @Composable
-private fun MoveRow(m: Move, settings: Settings, onClick: (Move) -> Unit) {
+private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
     val color = if (m.withdraw) MaterialTheme.colorScheme.error else tintAt(m.tint)
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick(m) }.liquidGlass(settings),
-        colors = lowCardColors(settings),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth().clickable { onClick(m) }) {
         Row(modifier = Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(40.dp).background(

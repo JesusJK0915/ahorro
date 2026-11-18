@@ -79,11 +79,6 @@ fun HomeScreen(
     val totalSaved = state.goals.sumOf { it.saved }
     val totalTarget = state.goals.sumOf { it.target }
     val globalPct = if (totalTarget > 0) (totalSaved.toFloat() / totalTarget * 100f).coerceIn(0f, 100f) else 0f
-    val onHero = if (state.settings.glass) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    }
 
     Column(
         modifier = Modifier
@@ -100,10 +95,8 @@ fun HomeScreen(
         Spacer(Modifier.height(16.dp))
 
         Card(
-            modifier = Modifier.fillMaxWidth().liquidGlass(state.settings),
-            colors = CardDefaults.cardColors(
-                containerColor = glassCardColor(state.settings, MaterialTheme.colorScheme.primaryContainer),
-            ),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(18.dp),
@@ -113,18 +106,18 @@ fun HomeScreen(
                     Text(
                         "Total ahorrado",
                         style = MaterialTheme.typography.labelLarge,
-                        color = onHero,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
                         money(totalSaved),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = onHero,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
                         "de ${money(totalTarget)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = onHero,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
                 if (state.settings.ringMode) {
@@ -153,10 +146,7 @@ fun HomeScreen(
         Spacer(Modifier.height(8.dp))
 
         if (state.goals.isEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth().liquidGlass(state.settings),
-                colors = lowCardColors(state.settings),
-            ) {
+            Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -183,7 +173,7 @@ fun HomeScreen(
             }
         } else {
             state.goals.forEach { g ->
-                GoalCard(g = g, ring = state.settings.ringMode, settings = state.settings, onClick = { onGoalClick(g) })
+                GoalCard(g = g, ring = state.settings.ringMode, onClick = { onGoalClick(g) })
                 Spacer(Modifier.height(10.dp))
             }
             Spacer(Modifier.height(6.dp))
@@ -198,13 +188,10 @@ fun HomeScreen(
 }
 
 @Composable
-private fun GoalCard(g: Goal, ring: Boolean, settings: Settings, onClick: () -> Unit) {
+private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
     val color = tintAt(g.tint)
     val p = pct(g)
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).liquidGlass(settings),
-        colors = lowCardColors(settings),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             if (ring) {
                 Box(contentAlignment = Alignment.Center) {
@@ -235,7 +222,6 @@ private fun GoalCard(g: Goal, ring: Boolean, settings: Settings, onClick: () -> 
 @Composable
 private fun StatsCard(vm: AppViewModel) {
     val moves = vm.ui.moves
-    val settings = vm.ui.settings
     val key = monthKey(System.currentTimeMillis())
     val inMes = moves.filter { !it.withdraw && monthKey(it.ts) == key }
     val outMes = moves.filter { it.withdraw && monthKey(it.ts) == key }
@@ -243,10 +229,7 @@ private fun StatsCard(vm: AppViewModel) {
     val calendar = monthCalendar(moves)
     val maxNet = buckets.maxOf { abs(it.net) }.coerceAtLeast(1)
 
-    Card(
-        modifier = Modifier.fillMaxWidth().liquidGlass(settings),
-        colors = lowCardColors(settings),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Estadísticas", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -258,13 +241,13 @@ private fun StatsCard(vm: AppViewModel) {
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatBox("Ahorrado", money(inMes.sumOf { it.amount }), settings, Modifier.weight(1f))
-                StatBox("Retirado", money(outMes.sumOf { it.amount }), settings, Modifier.weight(1f))
+                StatBox("Ahorrado", money(inMes.sumOf { it.amount }), Modifier.weight(1f))
+                StatBox("Retirado", money(outMes.sumOf { it.amount }), Modifier.weight(1f))
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatBox("Aportes", "${inMes.size}", settings, Modifier.weight(1f))
-                StatBox("Retiros", "${outMes.size}", settings, Modifier.weight(1f))
+                StatBox("Aportes", "${inMes.size}", Modifier.weight(1f))
+                StatBox("Retiros", "${outMes.size}", Modifier.weight(1f))
             }
             Spacer(Modifier.height(18.dp))
             Text("Últimos 7 días", style = MaterialTheme.typography.labelLarge)
@@ -338,13 +321,8 @@ private fun StatsCard(vm: AppViewModel) {
 }
 
 @Composable
-private fun StatBox(label: String, value: String, settings: Settings, modifier: Modifier) {
-    Card(
-        modifier = modifier.liquidGlass(settings),
-        colors = CardDefaults.cardColors(
-            containerColor = glassCardColor(settings, MaterialTheme.colorScheme.surfaceContainerHighest),
-        ),
-    ) {
+private fun StatBox(label: String, value: String, modifier: Modifier) {
+    Card(modifier = modifier) {
         Column(Modifier.padding(12.dp)) {
             Text(label, style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

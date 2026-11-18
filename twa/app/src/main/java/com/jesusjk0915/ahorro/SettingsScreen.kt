@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -83,8 +84,8 @@ fun SettingsScreen(
 
         Text("Apariencia", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
-            modifier = Modifier.fillMaxWidth().liquidGlass(settings),
-            colors = lowCardColors(settings),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 SwitchRow("Progreso circular", settings.ringMode) { vm.setRingMode(it) }
@@ -138,8 +139,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(18.dp))
         Text("Seguridad", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
-            modifier = Modifier.fillMaxWidth().liquidGlass(settings),
-            colors = lowCardColors(settings),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
             Column(Modifier.padding(16.dp)) {
                 SecurityOption("Sin bloqueo", settings.security == "none") { vm.setSecurity("none") }
@@ -174,8 +175,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(18.dp))
         Text("Actualizaciones", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
-            modifier = Modifier.fillMaxWidth().liquidGlass(settings),
-            colors = lowCardColors(settings),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
             Column(Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
