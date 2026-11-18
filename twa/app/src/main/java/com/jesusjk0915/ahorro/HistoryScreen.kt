@@ -165,7 +165,7 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
                 }
             }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(96.dp))
     }
 }
 

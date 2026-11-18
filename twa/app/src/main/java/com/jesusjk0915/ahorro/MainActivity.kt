@@ -17,11 +17,12 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +30,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -255,15 +257,10 @@ private fun AppContent(
     var sheet by remember { mutableStateOf<SheetState?>(null) }
     var confirm by remember { mutableStateOf<ConfirmState?>(null) }
 
-    Scaffold(
-        bottomBar = {
-            WebNavBar(settings = vm.ui.settings, tab = tab, onTab = { tab = it })
-        },
-    ) { padding ->
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .swipeBetweenTabs(
                     enabled = sheet == null && confirm == null,
                     tab = tab,
@@ -285,6 +282,9 @@ private fun AppContent(
                     onToast = onToast,
                 )
             }
+        }
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
+            WebNavBar(settings = vm.ui.settings, tab = tab, onTab = { tab = it })
         }
     }
 

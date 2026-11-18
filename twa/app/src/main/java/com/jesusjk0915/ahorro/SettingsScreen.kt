@@ -238,7 +238,7 @@ fun SettingsScreen(
                 }
             }
         }
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(96.dp))
     }
 
     if (pinSetup) {
