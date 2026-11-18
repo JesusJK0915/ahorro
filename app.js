@@ -25,7 +25,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.2.2";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -787,7 +787,7 @@ function createGoal(name, target) {
   return g;
 }
 
-function updateGoal(id, name, target) {
+function saveGoalEdit(id, name, target) {
   const g = state.goals.find((x) => x.id === id);
   if (!g || !name.trim() || !(target > 0)) return;
   g.name = name.trim().slice(0, 42);
@@ -1006,7 +1006,7 @@ function openEditGoal(id) {
     target.addEventListener("input", () => {
       target.value = digits(target.value) ? group(digits(target.value)) : "";
     });
-    const doSave = once((t) => { updateGoal(id, name.value, t); close(); });
+    const doSave = once((t) => { saveGoalEdit(id, name.value, t); close(); });
     const submit = () => {
       const t = Number(digits(target.value));
       if (!name.value.trim()) { shake(name); name.focus(); return; }
