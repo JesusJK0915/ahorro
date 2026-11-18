@@ -19,11 +19,13 @@ const group = (n) => Math.round(Number(n) || 0).toLocaleString("es-CO");
 const digits = (v) => String(v ?? "").replace(/\D/g, "");
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const uid = () => Math.random().toString(36).slice(2, 9);
+// Evita que un botón se ejecute dos veces (doble toque o Enter + click).
+const once = (fn) => { let done = false; return (...a) => { if (done) return; done = true; return fn(...a); }; };
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.1.5";
+const APP_VERSION = "1.1.6";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -68,6 +70,24 @@ function load() {
     if (!p || !Array.isArray(p.goals)) return defaults();
     p.moves = Array.isArray(p.moves) ? p.moves : [];
     p.goals = p.goals.filter((g) => g && typeof g.name === "string" && Number(g.target) > 0);
+    // Repara duplicados accidentales: mismo nombre y objetivo, una en $0 y otra con ahorros.
+    const usedIds = new Set(p.moves.map((m) => m.goalId));
+    const byKey = new Map();
+    p.goals.forEach((g) => {
+      const k = g.name.trim().toLowerCase() + "|" + Number(g.target);
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(g);
+    });
+    const dropIds = new Set();
+    byKey.forEach((list) => {
+      if (list.length < 2) return;
+      const active = list.some((g) => (Number(g.saved) || 0) > 0 || usedIds.has(g.id));
+      if (!active) return; // todas en $0: se respetan, podrían ser metas distintas
+      list.forEach((g) => {
+        if ((Number(g.saved) || 0) <= 0 && !usedIds.has(g.id)) dropIds.add(g.id);
+      });
+    });
+    if (dropIds.size) p.goals = p.goals.filter((g) => !dropIds.has(g.id));
     if (typeof p.ringMode !== "boolean") p.ringMode = false;
     if (typeof p.dynamicColor !== "boolean") p.dynamicColor = true;
     if (typeof p.glass !== "number" || !Number.isFinite(p.glass)) p.glass = 72;
@@ -813,13 +833,12 @@ function openNewGoal() {
     target.addEventListener("input", () => {
       target.value = digits(target.value) ? group(digits(target.value)) : "";
     });
+    const doSubmit = once((t) => { createGoal(name.value, t); close(); buzz(); });
     const submit = () => {
       const t = Number(digits(target.value));
       if (!name.value.trim()) { shake(name); name.focus(); return; }
       if (!(t > 0)) { shake(target); target.focus(); return; }
-      createGoal(name.value, t);
-      close();
-      buzz();
+      doSubmit(t);
     };
     $("#f-save", root).addEventListener("click", submit);
     root.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
@@ -876,11 +895,11 @@ function openDeposit(id) {
         amt.value = group(Number(b.dataset.set));
         preview(); buzz(8);
       }));
+    const doSave = once((v) => { close(); setTimeout(() => addSaving(id, v), 120); });
     const submit = () => {
       const v = Number(digits(amt.value));
       if (!(v > 0)) { shake(amt); amt.focus(); return; }
-      close();
-      setTimeout(() => addSaving(id, v), 120);
+      doSave(v);
     };
     $("#d-save", root).addEventListener("click", submit);
     root.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
@@ -942,11 +961,11 @@ function openWithdraw(id) {
       }));
     const all = $('[data-all="1"]', root);
     if (all) all.addEventListener("click", () => { setVal(g.saved); buzz(8); });
+    const doSave = once((v) => { close(); setTimeout(() => withdrawSaving(id, v), 120); });
     const submit = () => {
       const v = Number(digits(amt.value));
       if (!(v > 0) || v > g.saved) { shake(amt); amt.focus(); return; }
-      close();
-      setTimeout(() => withdrawSaving(id, v), 120);
+      doSave(v);
     };
     $("#w-save", root).addEventListener("click", submit);
     root.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
@@ -964,12 +983,12 @@ function openGoalOptions(id) {
       <button class="btn-tonal press" id="o-withdraw" style="width:100%">Retirar dinero</button>
       <button class="btn-tonal press btn-danger" id="o-del" style="width:100%">Eliminar meta</button>
     </div>`, (root, close) => {
-    $("#o-add", root).addEventListener("click", () => { close(); setTimeout(() => openDeposit(id), 180); });
-    $("#o-withdraw", root).addEventListener("click", () => { close(); setTimeout(() => openWithdraw(id), 180); });
-    $("#o-del", root).addEventListener("click", () => {
+    $("#o-add", root).addEventListener("click", once(() => { close(); setTimeout(() => openDeposit(id), 180); }));
+    $("#o-withdraw", root).addEventListener("click", once(() => { close(); setTimeout(() => openWithdraw(id), 180); }));
+    $("#o-del", root).addEventListener("click", once(() => {
       close();
       setTimeout(() => openConfirm(`¿Eliminar "${g.name}"?`, "Se borrará la meta. Los aportes ya registrados quedan en el historial.", () => deleteGoal(id)), 180);
-    });
+    }));
   });
 }
 
@@ -979,7 +998,7 @@ function openConfirm(title, text, onYes) {
       <button class="btn-tonal press" data-close>Cancelar</button>
       <button class="btn-filled press" id="c-yes" style="background:var(--error);color:#fff;box-shadow:none">Eliminar</button>
     </div>`, (root, close) => {
-    $("#c-yes", root).addEventListener("click", () => { close(); setTimeout(onYes, 150); });
+    $("#c-yes", root).addEventListener("click", once(() => { close(); setTimeout(onYes, 150); }));
   });
 }
 
