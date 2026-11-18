@@ -138,13 +138,13 @@ function buildPattern(host, n, onComplete) {
   return { clear() { seq = []; paint(); } };
 }
 
-/* ---------------- huella ---------------- */
-function bioAvailable() {
+/* ---------------- bloqueo del celular (huella / PIN / patrón del sistema) ---------------- */
+function deviceLockAvailable() {
   try { return !!(window.AndroidAuth && window.AndroidAuth.isAvailable()); }
   catch (_) { return false; }
 }
-function bioAsk() {
-  if (lockCfg().method !== "biometric" || !bioAvailable()) return false;
+function askDeviceLock() {
+  if (lockCfg().method !== "biometric" || !deviceLockAvailable()) return false;
   try { window.AndroidAuth.authenticate(); return true; }
   catch (_) { return false; }
 }
@@ -181,9 +181,16 @@ function chooseLockMethod(m) {
     return;
   }
   if (m === "biometric") {
-    if (!bioAvailable()) {
+    if (!deviceLockAvailable()) {
       renderSettings();
-      openSheet("Huella no disponible", "Tu celular no tiene una huella registrada o el sensor no responde. Puedes usar PIN o patrón en su lugar.", "", () => {});
+      openSheet("Celular sin bloqueo", "Tu celular no tiene PIN, patrón ni huella configurados. Elige un bloqueo para la app.", `
+        <div class="sheet-actions">
+          <button class="btn-filled press" id="fbPin">PIN de la app</button>
+          <button class="btn-tonal press" id="fbPattern">Patrón de la app</button>
+        </div>`, (body, close) => {
+        body.querySelector("#fbPin")?.addEventListener("click", once(() => { close(); setTimeout(setupPin, 150); }));
+        body.querySelector("#fbPattern")?.addEventListener("click", once(() => { close(); setTimeout(setupPattern, 150); }));
+      });
       return;
     }
     finishLock({ method: "biometric" }, true);
@@ -299,7 +306,7 @@ function openLockManager() {
   if (cfg.method === "none") { chooseLockMethod("pin"); return; }
   const detail = cfg.method === "pin" ? `PIN de ${cfg.pinLen} dígitos`
     : cfg.method === "pattern" ? `Patrón ${cfg.grid}×${cfg.grid}`
-    : "Huella del dispositivo";
+    : "Bloqueo del celular";
   openSheet("Seguridad", `Método actual: ${detail}.`, `
     <div class="lock-detail">${detail}</div>
     <button class="btn-filled press" id="lockReconfig">Cambiar método</button>
@@ -357,9 +364,11 @@ function showLock(mode) {
   if (cfg.method === "none") { el.hidden = true; return; }
   el.hidden = false;
 
+  const noDevice = cfg.method === "biometric" && !deviceLockAvailable();
   const detail = cfg.method === "pin" ? `Ingresa tu PIN de ${cfg.pinLen} dígitos`
     : cfg.method === "pattern" ? `Dibuja tu patrón de ${cfg.grid}×${cfg.grid}`
-    : "Confirma tu huella para continuar";
+    : noDevice ? "Tu celular no tiene bloqueo configurado"
+    : "Desbloquea tu celular para continuar";
   const remaining = Math.max(0, lockBlockedUntil - Date.now());
 
   el.innerHTML = `
@@ -375,11 +384,17 @@ function showLock(mode) {
         <input id="recInput" class="lock-input" autocomplete="off" placeholder="ABC-123" />
         <button class="btn-filled press" id="recOk">Entrar</button>
         <button class="text-btn" id="recBack">Volver</button>
+      ` : noDevice ? `
+        <p class="lock-note">Sin bloqueo de celular, la app necesita su propio PIN o patrón.</p>
+        <button class="btn-filled press" id="fbPinLock">Crear PIN de la app</button>
+        <button class="text-btn" id="fbPatLock">Crear patrón de la app</button>
+        <p class="lock-msg" id="lockMsg"></p>
+        <button class="text-btn" id="lockForgot">¿Olvidaste tu código?</button>
       ` : `
         <div class="lock-input-host" id="lockInputHost"></div>
-        ${cfg.method === "biometric" && bioAvailable() ? `<button class="bio-btn" id="bioBtn">
+        ${cfg.method === "biometric" && deviceLockAvailable() ? `<button class="bio-btn" id="bioBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4a8 8 0 0 0-8 8M12 20a8 8 0 0 0 8-8"/><path d="M12 8a4 4 0 0 0-4 4M12 16a4 4 0 0 0 4-4"/><path d="M12 12h.01"/></svg>
-          <span>Usar huella</span>
+          <span>Autenticación</span>
         </button>` : ""}
         <p class="lock-msg" id="lockMsg">${remaining > 0 ? `Espera ${Math.ceil(remaining / 1000)} s` : ""}</p>
         <button class="text-btn" id="lockForgot">¿Olvidaste tu código?</button>
@@ -409,7 +424,13 @@ function showLock(mode) {
   }
   if (remaining > 0) setTimeout(() => { if (!lockUnlocked) showLock(); }, remaining + 100);
 
-  el.querySelector("#bioBtn")?.addEventListener("click", bioAsk);
+  if (noDevice && lockView !== "recovery") {
+    const go = (fn) => once(() => { el.hidden = true; fn(); });
+    el.querySelector("#fbPinLock")?.addEventListener("click", go(setupPin));
+    el.querySelector("#fbPatLock")?.addEventListener("click", go(setupPattern));
+  } else {
+    el.querySelector("#bioBtn")?.addEventListener("click", askDeviceLock);
+  }
   el.querySelector("#lockForgot").addEventListener("click", () => showLock("recovery"));
 }
 

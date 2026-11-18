@@ -4,12 +4,17 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
 import androidx.biometric.BiometricManager;
-import androidx.fragment.app.FragmentActivity;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 
-/** Puente entre el WebView y el sensor de huella del dispositivo. */
+/** Puente entre el WebView y el bloqueo del celular (huella, PIN, patrón o contraseña). */
 public class BiometricBridge {
+    // Huella del sistema o credencial del dispositivo (PIN/patrón/contraseña).
+    private static final int AUTHENTICATORS =
+            BiometricManager.Authenticators.BIOMETRIC_WEAK
+                    | BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+
     private final FragmentActivity activity;
     private final WebView webView;
 
@@ -21,8 +26,7 @@ public class BiometricBridge {
     @JavascriptInterface
     public boolean isAvailable() {
         try {
-            return BiometricManager.from(activity)
-                    .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+            return BiometricManager.from(activity).canAuthenticate(AUTHENTICATORS)
                     == BiometricManager.BIOMETRIC_SUCCESS;
         } catch (Throwable t) {
             return false;
@@ -38,10 +42,12 @@ public class BiometricBridge {
                 return;
             }
             try {
+                // Con DEVICE_CREDENTIAL no se permite botón negativo: el propio sistema
+                // muestra la pantalla del celular y permite cancelar desde ella.
                 BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder()
-                        .setTitle("Ahorros")
-                        .setSubtitle("Confirma tu huella para entrar")
-                        .setNegativeButtonText("Cancelar")
+                        .setTitle("Autenticación")
+                        .setSubtitle("Desbloquea tu celular para continuar")
+                        .setAllowedAuthenticators(AUTHENTICATORS)
                         .build();
                 BiometricPrompt prompt = new BiometricPrompt(
                         activity,
