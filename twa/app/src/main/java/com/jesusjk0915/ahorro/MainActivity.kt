@@ -277,12 +277,8 @@ private fun AppContent(
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
-                    val forward = targetState > initialState
                     slideInHorizontally(
-                        initialX = { size -> if (forward) size.width.toFloat() else -size.width.toFloat() },
-                        animationSpec = tween(300),
-                    ) + slideOutHorizontally(
-                        targetX = { size -> if (forward) -size.width.toFloat() else size.width.toFloat() },
+                        initialX = { size -> size.width.toFloat() },
                         animationSpec = tween(300),
                     )
                 },
