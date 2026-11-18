@@ -1,15 +1,12 @@
 package com.jesusjk0915.ahorro;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.pm.PackageManager;
-import android.hardware.biometrics.BiometricManager;
-import android.hardware.biometrics.BiometricPrompt;
-import android.os.Build;
-import android.os.CancellationSignal;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
 
 /** Puente entre el WebView y el sensor de huella del dispositivo. */
 public class BiometricBridge {
@@ -23,35 +20,32 @@ public class BiometricBridge {
 
     @JavascriptInterface
     public boolean isAvailable() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false;
-        if (activity.checkSelfPermission(Manifest.permission.USE_BIOMETRIC)
-                != PackageManager.PERMISSION_GRANTED) return false;
         try {
             return BiometricManager.from(activity)
-                    .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                    .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
                     == BiometricManager.BIOMETRIC_SUCCESS;
-        } catch (Exception e) {
+        } catch (Throwable t) {
             return false;
         }
     }
 
     @JavascriptInterface
-    @SuppressLint("NewApi")
     public void authenticate() {
-        // Los métodos @JavascriptInterface corren en el hilo de JS, no en el de UI.
+        // @JavascriptInterface corre en el hilo de JS: mostramos el prompt en el de UI.
         activity.runOnUiThread(() -> {
             if (!isAvailable()) {
                 callback(false);
                 return;
             }
             try {
-                BiometricPrompt prompt = new BiometricPrompt.Builder(activity)
+                BiometricPrompt.PromptInfo info = new BiometricPrompt.PromptInfo.Builder(activity)
                         .setTitle("Ahorros")
                         .setSubtitle("Confirma tu huella para entrar")
-                        .setNegativeButton("Cancelar", activity.getMainExecutor(), (dialog, which) -> callback(false))
-                        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+                        .setNegativeButtonText("Cancelar")
                         .build();
-                prompt.authenticate(new CancellationSignal(), activity.getMainExecutor(),
+                BiometricPrompt prompt = new BiometricPrompt(
+                        activity,
+                        ContextCompat.getMainExecutor(activity),
                         new BiometricPrompt.AuthenticationCallback() {
                             @Override
                             public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult result) {
@@ -63,7 +57,8 @@ public class BiometricBridge {
                                 callback(false);
                             }
                         });
-            } catch (Exception e) {
+                prompt.authenticate(info);
+            } catch (Throwable t) {
                 callback(false);
             }
         });

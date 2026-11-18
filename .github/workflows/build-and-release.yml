@@ -34,7 +34,7 @@ jobs:
 
       - name: Copy web assets into APK
         run: |
-          cp index.html styles.css app.js icon.svg manifest.webmanifest twa/app/src/main/assets/
+          cp index.html styles.css app.js lock.js icon.svg manifest.webmanifest twa/app/src/main/assets/
 
       - name: Decode signing keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
