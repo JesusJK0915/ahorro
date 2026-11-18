@@ -66,6 +66,8 @@ public class LauncherActivity extends Activity {
 
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
+        // Huella: expone AndroidAuth.isAvailable() / AndroidAuth.authenticate() al WebView.
+        webView.addJavascriptInterface(new BiometricBridge(this, webView), "AndroidAuth");
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(true);

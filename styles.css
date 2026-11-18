@@ -1145,3 +1145,129 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
   from { transform: scaleY(.02); opacity: .25; }
   to   { transform: scaleY(1); opacity: 1; }
 }
+
+/* ============ bloqueo de app (PIN / patrón / huella) ============ */
+.lock {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: calc(24px + var(--sbh, 0px)) 18px calc(24px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(30px) saturate(180%) brightness(.85);
+  -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(.85);
+  animation: lockIn .35s var(--ease-emph) both;
+}
+.lock[hidden] { display: none !important; }
+@keyframes lockIn { from { opacity: 0; } to { opacity: 1; } }
+.lock-card {
+  width: min(100%, 400px);
+  max-height: 100%;
+  overflow-y: auto;
+  text-align: center;
+  padding: 26px 22px 22px;
+  border-radius: var(--r-xl);
+  background: color-mix(in srgb, var(--surface-container) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--on-surface) 12%, transparent);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .45), inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent);
+}
+.lock-badge {
+  width: 58px; height: 58px; margin: 0 auto 14px;
+  display: grid; place-items: center; border-radius: 20px;
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
+}
+.lock-badge svg { width: 28px; height: 28px; }
+.lock-card h2 { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
+.lock-sub { margin-top: 6px !important; font-size: 13.5px; color: var(--on-surface-variant); }
+.lock-msg { min-height: 18px; margin-top: 8px !important; font-size: 12.5px; font-weight: 700; color: var(--error); }
+.lock-input-host { margin-top: 18px; }
+.lock-card .btn-filled { width: 100%; margin-top: 14px; }
+.lock-card .text-btn { margin-top: 12px; }
+
+/* teclado PIN */
+.pin-dots { display: flex; justify-content: center; gap: 10px; margin: 4px 0 18px; flex-wrap: wrap; }
+.pin-dots i {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: color-mix(in srgb, var(--on-surface) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--on-surface) 25%, transparent);
+  transition: background .18s, transform .18s var(--ease-spring);
+}
+.pin-dots i.on { background: var(--primary); transform: scale(1.15); }
+.pin-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; max-width: 258px; margin: 0 auto; }
+.pin-key {
+  height: 52px; border-radius: 16px;
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-size: 20px; font-weight: 700;
+  transition: transform .18s var(--ease-spring), background-color .2s;
+}
+.pin-key:active { transform: scale(.93); background: var(--primary-container); }
+.pin-key.blank { background: transparent; pointer-events: none; }
+.pin-key.del { font-size: 22px; color: var(--on-surface-variant); }
+
+/* patrón */
+.pat-host { display: grid; place-items: center; margin-top: 12px; }
+.pat-wrap {
+  position: relative;
+  width: min(100%, 290px);
+  aspect-ratio: 1;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pat-grid {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-rows: repeat(var(--n), 1fr);
+  place-items: center;
+}
+.pat-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: color-mix(in srgb, var(--on-surface) 22%, transparent);
+  border: 2px solid color-mix(in srgb, var(--on-surface) 35%, transparent);
+  transition: background .15s, transform .18s var(--ease-spring);
+}
+.pat-dot.on {
+  background: var(--primary); border-color: var(--primary); transform: scale(1.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+.pat-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.pat-lines path { stroke: var(--primary); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: .9; }
+
+/* huella y rescate */
+.bio-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: min(100%, 258px); margin: 16px auto 0; padding: 13px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary); font-weight: 800; font-size: 14px;
+}
+.bio-btn svg { width: 22px; height: 22px; }
+.lock-input {
+  width: 100%; padding: 13px 14px; margin-top: 12px;
+  border-radius: 14px; border: 2px solid var(--outline-variant);
+  background: var(--surface-container-high); color: var(--on-surface);
+  font: inherit; font-weight: 800; text-align: center; letter-spacing: 3px; text-transform: uppercase;
+}
+.lock-input:focus { outline-color: var(--primary); }
+.lock-opts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 14px; }
+.lock-custom { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
+.lock-custom input {
+  width: 76px; padding: 8px; border-radius: 10px;
+  background: var(--surface-container-high); color: var(--on-surface);
+  border: 1px solid var(--outline-variant); font: inherit; font-weight: 700;
+}
+.lock-step { font-size: 12.5px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+.lock-note { font-size: 12px; color: var(--on-surface-variant); line-height: 1.5; }
+.recovery-code {
+  font-size: 26px; font-weight: 800; letter-spacing: 4px; padding: 18px;
+  border-radius: 16px; background: var(--surface-container-high); color: var(--primary);
+}
+.recovery-box { display: grid; gap: 4px; text-align: center; padding: 14px; border-radius: var(--r-md); background: var(--surface-container-low); }
+.recovery-box span { font-size: 12px; color: var(--on-surface-variant); }
+.recovery-box strong { font-size: 22px; letter-spacing: 3px; color: var(--primary); }
+.recovery-box small { font-size: 11px; color: var(--on-surface-variant); }
+.lock-detail { text-align: center; font-weight: 700; color: var(--primary); padding: 6px 0 2px; }

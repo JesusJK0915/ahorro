@@ -23,7 +23,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.1.3";
+const APP_VERSION = "1.1.4";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -52,6 +52,7 @@ function defaults() {
     ringMode: false,
     dynamicColor: true,
     glass: 72,
+    lock: { method: "none" },
     currency: "COP",
     themeMode: "dark",
   };
@@ -71,6 +72,8 @@ function load() {
     if (typeof p.dynamicColor !== "boolean") p.dynamicColor = true;
     if (typeof p.glass !== "number" || !Number.isFinite(p.glass)) p.glass = 72;
     p.glass = clamp(Math.round(p.glass), 0, 100);
+    if (!p.lock || typeof p.lock !== "object") p.lock = { method: "none" };
+    if (!["none", "pin", "pattern", "biometric"].includes(p.lock.method)) p.lock.method = "none";
     if (!p.currency) p.currency = "COP";
     p.themeMode = "dark";
     return p;
@@ -479,6 +482,8 @@ function compareVersions(a, b) {
 }
 
 /* ------------------------- ajustes ------------------------- */
+const lockLabelForSettings = (m) => ({ none: "Desactivado", pin: "PIN", pattern: "Patrón", biometric: "Huella" }[m] || "Desactivado");
+
 function renderSettings() {
   const list = $("#settingsList");
   if (!list) return;
@@ -522,6 +527,33 @@ function renderSettings() {
           value="${state.glass}" style="--p:${state.glass}" aria-label="Intensidad del efecto cristal" />
       </div>
     </li>
+    <li class="setting">
+      <span class="setting-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg>
+      </span>
+      <div class="setting-body">
+        <strong>Bloqueo de app</strong>
+        <span id="lockMethodLabel">${lockLabelForSettings(state.lock.method)}</span>
+      </div>
+      <div class="setting-control">
+        <select id="setLockMethod" class="field input-sm">
+          ${["none", "pin", "pattern", "biometric"].map((m) => `<option value="${m}" ${m === state.lock.method ? "selected" : ""}>${lockLabelForSettings(m)}</option>`).join("")}
+        </select>
+      </div>
+    </li>
+    ${state.lock.method !== "none" ? `
+    <li class="setting">
+      <span class="setting-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l2 2M14 9l2 2"/></svg>
+      </span>
+      <div class="setting-body">
+        <strong>Código y rescate</strong>
+        <span>Configura tu ${lockLabelForSettings(state.lock.method).toLowerCase()} o consulta el rescate.</span>
+      </div>
+      <div class="setting-control">
+        <button class="text-btn press" id="lockSetupBtn">Abrir</button>
+      </div>
+    </li>` : ""}
     <li class="setting">
       <span class="setting-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -582,6 +614,12 @@ function renderSettings() {
     // No re-renderizamos: se cortaría el arrastre. applyGlass actualiza la etiqueta en vivo.
     applyGlass(e.target.value);
     save();
+  });
+  $("#setLockMethod", list)?.addEventListener("change", (e) => {
+    if (typeof chooseLockMethod === "function") chooseLockMethod(e.target.value);
+  });
+  $("#lockSetupBtn", list)?.addEventListener("click", () => {
+    if (typeof openLockManager === "function") openLockManager();
   });
   $("#setCurrency", list).addEventListener("change", (e) => {
     state.currency = e.target.value;
