@@ -1,6 +1,8 @@
 package com.jesusjk0915.ahorro
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -178,12 +180,23 @@ private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
     val color = if (m.withdraw) MaterialTheme.colorScheme.error else tintAt(m.tint)
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
-    val enter by animateFloatAsState(if (shown) 1f else 0f, label = "moveEnter")
+    val bounce = spring<Float>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+    )
+    val enter by animateFloatAsState(if (shown) 1f else 0f, bounce, label = "moveEnter")
+    val rise by animateFloatAsState(if (shown) 0f else 14f, bounce, label = "moveRise")
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick(m) }
-            .graphicsLayer { alpha = enter },
+            .graphicsLayer {
+                alpha = enter.coerceIn(0f, 1f)
+                translationY = rise
+                val s = 0.96f + 0.04f * enter
+                scaleX = s
+                scaleY = s
+            },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(

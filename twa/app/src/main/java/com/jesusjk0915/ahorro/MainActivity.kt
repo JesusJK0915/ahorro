@@ -278,6 +278,7 @@ private fun AppContent(
     var tab by remember { mutableIntStateOf(0) }
     var sheet by remember { mutableStateOf<SheetState?>(null) }
     var confirm by remember { mutableStateOf<ConfirmState?>(null) }
+    var celebrate by remember { mutableStateOf<String?>(null) }
     val cs = MaterialTheme.colorScheme
 
     // Entrada elástica al abrir la app (rebote tipo iOS, sin AnimatedContent).
@@ -398,6 +399,9 @@ private fun AppContent(
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
             WebNavBar(settings = vm.ui.settings, tab = tab, onTab = { tab = it })
         }
+        celebrate?.let { name ->
+            GoalCelebration(name = name) { celebrate = null }
+        }
     }
 
     when (val s = sheet) {
@@ -428,7 +432,18 @@ private fun AppContent(
             title = "Añadir dinero",
             subtitle = s.goal.name,
             confirmLabel = "Añadir",
-            onConfirm = { amount -> vm.deposit(s.goal.id, amount); sheet = null; onToast("Aporte registrado") },
+            onConfirm = { amount ->
+                val before = s.goal
+                vm.deposit(before.id, amount)
+                sheet = null
+                val after = vm.ui.goals.firstOrNull { it.id == before.id }
+                if (before.saved < before.target && after != null && after.saved >= after.target) {
+                    celebrate = after.name
+                    onToast("¡Meta cumplida!")
+                } else {
+                    onToast("Aporte registrado")
+                }
+            },
             onDismiss = { sheet = null },
         )
         is SheetState.Withdraw -> AmountSheet(

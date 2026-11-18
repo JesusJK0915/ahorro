@@ -68,11 +68,19 @@ private fun pct(g: Goal): Float =
 @Composable
 private fun ProgressRing(value: Float, color: Color, size: Int = 92) {
     val track = MaterialTheme.colorScheme.surfaceVariant
+    val fill by animateFloatAsState(
+        targetValue = value,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "ringFill",
+    )
     Canvas(Modifier.size(size.dp)) {
         val stroke = 10f * density
         drawArc(color = track, startAngle = 0f, sweepAngle = 360f, useCenter = false, style = Stroke(stroke))
         drawArc(
-            color = color, startAngle = -90f, sweepAngle = 3.6f * value,
+            color = color, startAngle = -90f, sweepAngle = 3.6f * fill,
             useCenter = false, style = Stroke(stroke, cap = StrokeCap.Round),
         )
     }
@@ -81,10 +89,18 @@ private fun ProgressRing(value: Float, color: Color, size: Int = 92) {
 @Composable
 private fun ProgressLine(value: Float, color: Color) {
     val track = MaterialTheme.colorScheme.surfaceVariant
+    val fill by animateFloatAsState(
+        targetValue = value,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "lineFill",
+    )
     Canvas(Modifier.fillMaxWidth().height(12.dp)) {
         val radius = CornerRadius(6f * density)
         drawRoundRect(color = track, size = Size(size.width, size.height), cornerRadius = radius)
-        val w = size.width * (value / 100f)
+        val w = size.width * (fill / 100f)
         if (w > 0f) {
             drawRoundRect(color = color, size = Size(w, size.height), cornerRadius = radius)
         }
@@ -363,14 +379,30 @@ private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
     val p = pct(g)
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
-    val enter by animateFloatAsState(if (shown) 1f else 0f, tween(420), label = "goalEnter")
-    val rise by animateDpAsState(if (shown) 0.dp else 14.dp, tween(420), label = "goalRise")
+    val bounce = spring<Float>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+    )
+    val enter by animateFloatAsState(if (shown) 1f else 0f, bounce, label = "goalEnter")
+    val rise by animateDpAsState(
+        targetValue = if (shown) 0.dp else 16.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "goalRise",
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .offset(y = rise)
-            .graphicsLayer { alpha = enter },
+            .graphicsLayer {
+                alpha = enter.coerceIn(0f, 1f)
+                val s = 0.94f + 0.06f * enter
+                scaleX = s
+                scaleY = s
+            },
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp,
             hoveredElevation = 10.dp,
