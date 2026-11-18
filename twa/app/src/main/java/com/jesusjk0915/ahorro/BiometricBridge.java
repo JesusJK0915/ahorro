@@ -1,19 +1,19 @@
 package com.jesusjk0915.ahorro;
 
-import android.app.Activity;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
 import androidx.biometric.BiometricManager;
+import androidx.fragment.app.FragmentActivity;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
 /** Puente entre el WebView y el sensor de huella del dispositivo. */
 public class BiometricBridge {
-    private final Activity activity;
+    private final FragmentActivity activity;
     private final WebView webView;
 
-    public BiometricBridge(Activity activity, WebView webView) {
+    public BiometricBridge(FragmentActivity activity, WebView webView) {
         this.activity = activity;
         this.webView = webView;
     }

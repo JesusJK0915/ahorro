@@ -1,7 +1,7 @@
 package com.jesusjk0915.ahorro;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import androidx.fragment.app.FragmentActivity;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -26,7 +26,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-public class LauncherActivity extends Activity {
+public class LauncherActivity extends FragmentActivity {
     public static final String ACTION_INSTALL_RESULT = "ahorro.INSTALL_RESULT";
 
     private WebView webView;
