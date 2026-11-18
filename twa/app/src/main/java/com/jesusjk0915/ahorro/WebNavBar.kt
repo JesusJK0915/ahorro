@@ -152,56 +152,72 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                 .clip(RoundedCornerShape(50))
                 .drawBehind {
                     val x = sheen * size.width
-                    // Barrido ancho y difuso, como el reflejo del vidrio.
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.16f),
-                                Color.Transparent,
+                    if (settings.glass) {
+                        // Cristal líquido activo: reflejos del vidrio y lente.
+                        // Barrido ancho y difuso, como el reflejo del vidrio.
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.16f),
+                                    Color.Transparent,
+                                ),
+                                start = Offset(x - size.width * 0.45f, 0f),
+                                end = Offset(x + size.width * 0.45f, size.height),
                             ),
-                            start = Offset(x - size.width * 0.45f, 0f),
-                            end = Offset(x + size.width * 0.45f, size.height),
-                        ),
-                    )
-                    // Hilo de luz fino que se desliza por encima.
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.45f),
-                                Color.Transparent,
+                        )
+                        // Hilo de luz fino que se desliza por encima.
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.45f),
+                                    Color.Transparent,
+                                ),
+                                start = Offset(x - size.width * 0.16f, 0f),
+                                end = Offset(x + size.width * 0.16f, size.height),
                             ),
-                            start = Offset(x - size.width * 0.16f, 0f),
-                            end = Offset(x + size.width * 0.16f, size.height),
-                        ),
-                    )
-                    // Reflejo superior del borde.
-                    drawLine(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.White.copy(alpha = 0.55f),
-                                Color.Transparent,
+                        )
+                        // Reflejo superior del borde.
+                        drawLine(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.55f),
+                                    Color.Transparent,
+                                ),
                             ),
-                        ),
-                        start = Offset(size.width * 0.15f, 1f),
-                        end = Offset(size.width * 0.85f, 1f),
-                        strokeWidth = 1.5f,
-                    )
-                    // Efecto lente (--gx del CSS): reflejo radial que sigue
-                    // a la pestaña activa.
-                    val activeX = with(density) { xs[tab].toPx() + ws[tab].toPx() / 2f }
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.26f),
-                                Color.Transparent,
+                            start = Offset(size.width * 0.15f, 1f),
+                            end = Offset(size.width * 0.85f, 1f),
+                            strokeWidth = 1.5f,
+                        )
+                        // Efecto lente (--gx del CSS): reflejo radial que sigue
+                        // a la pestaña activa.
+                        val activeX = with(density) { xs[tab].toPx() + ws[tab].toPx() / 2f }
+                        drawRect(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.26f),
+                                    Color.Transparent,
+                                ),
+                                center = Offset(activeX, size.height * 0.4f),
+                                radius = with(density) { 100.dp.toPx() },
                             ),
-                            center = Offset(activeX, size.height * 0.4f),
-                            radius = with(density) { 100.dp.toPx() },
-                        ),
-                    )
+                        )
+                    } else {
+                        // Cristal apagado: dock flotante simple, igual que antes.
+                        drawRect(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.28f),
+                                    Color.Transparent,
+                                ),
+                                start = Offset(x - size.width * 0.3f, 0f),
+                                end = Offset(x + size.width * 0.3f, size.height),
+                            ),
+                        )
+                    }
                 }
                 .graphicsLayer {
                     alpha = enter
@@ -211,7 +227,8 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
-            // Niebla suave del cristal (blur de la capa, seguro con Compose).
+            // Niebla del cristal: difumina los colores que atraviesan el dock.
+            // Usa blur de Compose (seguro; no captura el View root).
             if (settings.glass && hs[tab] > 0.dp) {
                 Box(
                     modifier = Modifier
@@ -220,14 +237,15 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         .background(
                             Brush.linearGradient(
                                 listOf(
-                                    Color.White.copy(alpha = 0.20f),
-                                    cs.primary.copy(alpha = 0.16f),
+                                    Color.White.copy(alpha = 0.22f),
+                                    cs.primary.copy(alpha = 0.20f),
+                                    cs.tertiary.copy(alpha = 0.14f),
                                     Color.Transparent,
                                 ),
                             ),
                             RoundedCornerShape(50),
                         )
-                        .blur(14.dp)
+                        .blur(18.dp)
                         .clip(RoundedCornerShape(50)),
                 )
             }

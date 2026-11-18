@@ -63,11 +63,27 @@ fun Modifier.liquidGlass(
  */
 @Composable
 fun Modifier.iosDockGlass(settings: Settings): Modifier {
-    if (!settings.glass) return this
-
     val cs = MaterialTheme.colorScheme
-    val opaque = settings.glassStyle == "opaque"
     val shape = RoundedCornerShape(50)
+
+    // Cristal desactivado: dock flotante normal, como antes del vidrio líquido.
+    if (!settings.glass) {
+        return this
+            .shadow(
+                elevation = 10.dp,
+                shape = shape,
+                ambientColor = Color.Black.copy(alpha = 0.45f),
+                spotColor = cs.primary.copy(alpha = 0.18f),
+            )
+            .background(cs.surfaceContainerHigh, shape)
+            .border(
+                width = 1.dp,
+                color = cs.outlineVariant.copy(alpha = 0.35f),
+                shape = shape,
+            )
+    }
+
+    val opaque = settings.glassStyle == "opaque"
 
     return this
         .shadow(
