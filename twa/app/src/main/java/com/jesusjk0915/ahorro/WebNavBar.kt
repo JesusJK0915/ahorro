@@ -184,11 +184,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = if (settings.hideDockLabels) {
-                    Arrangement.spacedBy(20.dp)
-                } else {
-                    Arrangement.spacedBy(4.dp)
-                },
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
                 labels.forEachIndexed { index, label ->
                     val active = tab == index
@@ -208,6 +204,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
 
                     Row(
                         modifier = Modifier
+                            .weight(1f)
                             .clickable(
                                 interactionSource = interaction,
                                 indication = null,
@@ -227,7 +224,11 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                                 if (hs[index] != nh) hs[index] = nh
                             },
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = if (settings.hideDockLabels) {
+                            Arrangement.Center
+                        } else {
+                            Arrangement.spacedBy(8.dp)
+                        },
                     ) {
                         Box(
                             modifier = Modifier.graphicsLayer {
