@@ -15,29 +15,25 @@ import android.view.View
 /**
  * Equivalente nativo del `backdrop-filter: blur()` del CSS original.
  *
- * Captura lo que ya dibujó la pantalla (el contenido de abajo), le aplica
- * un RenderEffect de desenfoque real y lo recorta a una píldora. Se coloca
- * entre el contenido y el dock, así el dock queda dibujado encima.
+ * Captura lo que ya dibujó la pantalla (el contenido de abajo), lo recorta a
+ * una píldora y el propio View aplica un RenderEffect de desenfoque real.
+ * Se coloca entre el contenido y el dock, así el dock queda dibujado encima.
  */
 class BackdropBlurView(context: Context) : View(context) {
-    private val blurPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val drawPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val tintPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val pill = Path()
     private var snapshot: Bitmap? = null
 
     init {
-        setRadius(24f, 1f)
         tintPaint.alpha = 0
     }
 
+    /** RenderEffect se aplica al View (API 31+), no al Paint. */
     fun setRadius(dp: Float, density: Float) {
-        val px = dp * density
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            blurPaint.setRenderEffect(
-                RenderEffect.createBlurEffect(px, px, Shader.TileMode.CLAMP),
-            )
-        } else {
-            blurPaint.setRenderEffect(null)
+            val px = dp * density
+            setRenderEffect(RenderEffect.createBlurEffect(px, px, Shader.TileMode.CLAMP))
         }
         invalidate()
     }
@@ -90,7 +86,7 @@ class BackdropBlurView(context: Context) : View(context) {
 
         canvas.save()
         canvas.clipPath(pill)
-        canvas.drawBitmap(bmp, 0f, 0f, blurPaint)
+        canvas.drawBitmap(bmp, 0f, 0f, drawPaint)
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), tintPaint)
         canvas.restore()
 
