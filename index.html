@@ -87,6 +87,11 @@
               <div class="chart-head"><span>Últimos 7 días</span><b id="chartTotal">$0</b></div>
               <div class="chart" id="chart"></div>
             </div>
+            <div class="chart-card cal-card">
+              <div class="chart-head"><span>Aportes del mes</span><b id="calMonth"></b></div>
+              <div class="cal-week"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+              <div class="cal-grid" id="calGrid"></div>
+            </div>
           </div>
         </section>
 
@@ -116,6 +121,21 @@
           <h2>Historial</h2>
           <span class="muted" id="historyCount"></span>
         </div>
+        <div class="history-filters">
+          <label class="field input-sm">
+            <span>Meta</span>
+            <select id="histGoal"><option value="all">Todas las metas</option></select>
+          </label>
+          <label class="field input-sm">
+            <span>Periodo</span>
+            <select id="histPeriod">
+              <option value="all">Todo el tiempo</option>
+              <option value="7">Últimos 7 días</option>
+              <option value="30">Últimos 30 días</option>
+              <option value="month">Este mes</option>
+            </select>
+          </label>
+        </div>
         <ul class="history" id="historyList"></ul>
         <div class="empty" id="emptyHistory" hidden>
           <div class="empty-art" aria-hidden="true">
@@ -125,8 +145,8 @@
               <path d="M12 8v4.5l3 1.8" />
             </svg>
           </div>
-          <h3>Aún no hay movimientos</h3>
-          <p>Cada aporte que hagas aparecerá aquí.</p>
+          <h3 id="emptyHistoryTitle">Aún no hay movimientos</h3>
+          <p id="emptyHistoryText">Cada aporte que hagas aparecerá aquí.</p>
         </div>
       </section>
 

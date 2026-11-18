@@ -488,6 +488,17 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 .move-body strong { display: block; font-size: 14.5px; font-weight: 650; }
 .move-body span { font-size: 12.5px; color: var(--on-surface-variant); }
 .move-amt { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--primary); }
+.move-hit { cursor: pointer; }
+.move-more {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  color: var(--on-surface-variant);
+  background: color-mix(in srgb, var(--on-surface) 6%, transparent);
+}
+.move-more svg { width: 16px; height: 16px; }
+.history-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
 
 /* ============ empty ============ */
 .empty { text-align: center; padding: 34px 20px 10px; animation: rise .5s var(--ease-emph) both; }
@@ -741,6 +752,23 @@ body.kb-open .scrim { opacity: .22; }
 }
 [data-theme="dark"] .field input, [data-theme="dark"] .amount-input { background: var(--surface-container); }
 .field input:focus, .amount-input:focus { outline-color: var(--primary); }
+.field select, select.field {
+  width: 100%;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--surface-container-lowest, var(--surface));
+  color: var(--on-surface);
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  outline: 2px solid transparent;
+  transition: outline-color .25s var(--ease-emph), background-color .3s;
+}
+[data-theme="dark"] .field select,
+[data-theme="dark"] select.field { background: var(--surface-container); }
+.field select:focus, select.field:focus { outline-color: var(--primary); }
+.history-filters .field > span { font-size: 11px; margin-bottom: 4px; }
 
 .amount-wrap {
   display: flex;
@@ -1228,6 +1256,30 @@ body.kb-open .scrim { opacity: .22; }
   from { transform: scaleY(.02); opacity: .25; }
   to   { transform: scaleY(1); opacity: 1; }
 }
+
+/* Calendario de aportes */
+.cal-card { margin-top: 12px; }
+.cal-week {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+  margin: 4px 0 6px;
+  font-size: 9.5px; font-weight: 800; text-align: center;
+  color: var(--on-surface-variant);
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  font-size: 10px; font-weight: 700;
+  color: var(--on-surface-variant);
+  background: var(--surface-container-low);
+}
+.cal-day.blank { background: transparent; }
+.cal-day.today { outline: 2px solid var(--primary); outline-offset: -2px; color: var(--on-surface); }
+.cal-day.lv1 { color: var(--on-primary-container); background: color-mix(in srgb, var(--primary) 18%, var(--surface-container-low)); }
+.cal-day.lv2 { color: var(--on-primary-container); background: color-mix(in srgb, var(--primary) 34%, var(--surface-container-low)); }
+.cal-day.lv3 { color: var(--on-primary-container); background: color-mix(in srgb, var(--primary) 55%, var(--surface-container-low)); }
+.cal-day.lv4 { color: var(--on-primary); background: var(--primary); }
 
 /* ============ bloqueo de app (PIN / patrón / huella) ============ */
 .lock {

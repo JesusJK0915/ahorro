@@ -25,7 +25,7 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const TINTS = ["#00696b", "#8a5a00", "#7a4e9c", "#a03a2e", "#00658e"];
 // Versionado: cuando el parche llega a 9, sube el número del medio y reinicia en 0.
 // Ej: 1.0.9 -> 1.1.0 -> 1.1.1 ... -> 1.1.9 -> 1.2.0
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 // Cambia esta URL por la de tu version.json publicado (GitHub Pages, etc.)
 const UPDATE_URL = "https://JesusJK0915.github.io/ahorro/version.json";
 const pctOf = (g) => (g.target > 0 ? clamp((g.saved / g.target) * 100, 0, 100) : 0);
@@ -311,6 +311,34 @@ function paintStats() {
     </div>`;
   }).join("");
   $("#chartTotal").textContent = money(data.reduce((s, x) => s + x.net, 0));
+
+  // Calendario de aportes del mes en curso.
+  const now = new Date();
+  const y = now.getFullYear(), mo = now.getMonth();
+  const first = new Date(y, mo, 1);
+  const start = (first.getDay() + 6) % 7; // semana empieza en lunes
+  const daysInMonth = new Date(y, mo + 1, 0).getDate();
+  const perDay = new Map();
+  state.moves.forEach((m) => {
+    if (m.type === "withdraw") return;
+    const d = new Date(m.ts);
+    if (d.getFullYear() !== y || d.getMonth() !== mo) return;
+    const k = d.getDate();
+    perDay.set(k, (perDay.get(k) || 0) + (Number(m.amount) || 0));
+  });
+  const maxDay = Math.max(1, ...perDay.values());
+  let cells = "";
+  for (let i = 0; i < start; i++) cells += `<span class="cal-day blank"></span>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const v = perDay.get(d) || 0;
+    const lv = v <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((v / maxDay) * 4)));
+    const today = d === now.getDate() ? " today" : "";
+    cells += `<span class="cal-day lv${lv}${today}" title="${d} · ${money(v)}">${d}</span>`;
+  }
+  const calGrid = $("#calGrid");
+  if (calGrid) calGrid.innerHTML = cells;
+  const calMonth = $("#calMonth");
+  if (calMonth) calMonth.textContent = first.toLocaleDateString("es-CO", { month: "short", year: "numeric" });
 }
 
 function renderGoals() {
@@ -412,24 +440,55 @@ function updateGoal(el, g) {
     : `Faltan ${money(g.target - g.saved)}`;
 }
 
+let historyFilter = { goal: "all", period: "all" };
 function renderHistory() {
   const list = $("#historyList");
-  const moves = state.moves.slice(0, 60);
-  $("#historyCount").textContent = moves.length ? `${state.moves.length} mov.` : "";
+  if (!list) return;
+
+  const goalSel = $("#histGoal");
+  if (goalSel) {
+    goalSel.innerHTML = `<option value="all">Todas las metas</option>` +
+      state.goals.map((g) => `<option value="${g.id}">${escapeHTML(g.name)}</option>`).join("");
+    const valid = historyFilter.goal === "all" || state.goals.some((g) => g.id === historyFilter.goal);
+    historyFilter.goal = valid ? historyFilter.goal : "all";
+    goalSel.value = historyFilter.goal;
+  }
+
+  const now = Date.now();
+  const moves = state.moves.filter((m) => {
+    if (historyFilter.goal !== "all" && m.goalId !== historyFilter.goal) return false;
+    const p = historyFilter.period;
+    if (p === "7" && now - m.ts > 7 * 864e5) return false;
+    if (p === "30" && now - m.ts > 30 * 864e5) return false;
+    if (p === "month" && monthKey(m.ts) !== monthKey(now)) return false;
+    return true;
+  }).slice(0, 80);
+
+  $("#historyCount").textContent = moves.length ? `${moves.length} mov.` : "";
   list.innerHTML = moves.map((m, i) => {
     const out = m.type === "withdraw";
     return `
-    <li class="move ${out ? "move-out" : ""}" style="--i:${Math.min(i, 8)};--tint-raw:${m.tint || TINTS[0]}">
+    <li class="move press move-hit ${out ? "move-out" : ""}" data-move="${m.id}" style="--i:${Math.min(i, 8)};--tint-raw:${m.tint || TINTS[0]}">
       <span class="move-dot">${icon(out ? "down" : "up", 18)}</span>
       <div class="move-body">
         <strong>${escapeHTML(m.name || (out ? "Retiro" : "Aporte"))}</strong>
         <span>${fmtDate(m.ts)}</span>
       </div>
       <span class="move-amt">${out ? "-" : "+"}${money(m.amount)}</span>
+      <span class="move-more" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+      </span>
     </li>`;
   }).join("");
-  $("#emptyHistory").hidden = state.moves.length > 0;
-  list.hidden = state.moves.length === 0;
+
+  $("#emptyHistory").hidden = moves.length > 0;
+  list.hidden = moves.length === 0;
+  $("#emptyHistoryTitle").textContent = state.moves.length
+    ? "Sin movimientos con este filtro"
+    : "Aún no hay movimientos";
+  $("#emptyHistoryText").textContent = state.moves.length
+    ? "Prueba con otra meta o con otro periodo."
+    : "Cada aporte que hagas aparecerá aquí.";
 }
 
 /* ------------------------- actualizaciones ------------------------- */
@@ -728,6 +787,45 @@ function createGoal(name, target) {
   return g;
 }
 
+function updateGoal(id, name, target) {
+  const g = state.goals.find((x) => x.id === id);
+  if (!g || !name.trim() || !(target > 0)) return;
+  g.name = name.trim().slice(0, 42);
+  g.target = target;
+  state.moves.forEach((m) => { if (m.goalId === id) m.name = g.name; });
+  save();
+  render();
+  buzz();
+}
+
+/* Ajusta el ahorro de la meta cuando se edita o borra un movimiento. */
+function adjustSavedForMove(m, delta) {
+  const g = state.goals.find((x) => x.id === m.goalId);
+  if (g) g.saved = Math.max(0, (Number(g.saved) || 0) + delta);
+}
+function editMoveAmount(id, amount) {
+  const m = state.moves.find((x) => x.id === id);
+  if (!m || !(amount > 0)) return;
+  const old = Number(m.amount) || 0;
+  const sign = m.type === "withdraw" ? -1 : 1;
+  adjustSavedForMove(m, sign * (amount - old));
+  m.amount = amount;
+  save();
+  render();
+  buzz();
+}
+function deleteMove(id) {
+  const idx = state.moves.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const m = state.moves[idx];
+  const sign = m.type === "withdraw" ? 1 : -1;
+  adjustSavedForMove(m, sign * (Number(m.amount) || 0));
+  state.moves.splice(idx, 1);
+  save();
+  render();
+  buzz(20);
+}
+
 function deleteGoal(id) {
   state.goals = state.goals.filter((g) => g.id !== id);
   save();
@@ -876,6 +974,95 @@ function openNewGoal() {
   });
 }
 
+/* ------------------------- editar meta ------------------------- */
+function openEditGoal(id) {
+  const g = state.goals.find((x) => x.id === id);
+  if (!g) return;
+  openSheet(`Editar <em>${escapeHTML(g.name)}</em>`, "Cambia el nombre o el monto objetivo.", `
+    <label class="field"><span>Nombre</span>
+      <input id="eg-name" maxlength="42" autocomplete="off" value="${escapeHTML(g.name)}" />
+    </label>
+    <label class="field"><span>Monto objetivo</span>
+      <div class="amount-wrap">
+        <span class="cur">$</span>
+        <input id="eg-target" inputmode="numeric" autocomplete="off" value="${group(g.target)}" />
+      </div>
+    </label>
+    <div class="chips">
+      ${[500000, 1000000, 5000000].map((v) => `<button class="chip-btn press" data-target="${v}">${group(v)}</button>`).join("")}
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-tonal press" data-close>Cancelar</button>
+      <button class="btn-filled press" id="eg-save">Guardar cambios</button>
+    </div>`, (root, close) => {
+    const name = $("#eg-name", root);
+    const target = $("#eg-target", root);
+    root.querySelectorAll("[data-target]").forEach((b) =>
+      b.addEventListener("click", () => {
+        target.value = group(b.dataset.target);
+        root.querySelectorAll("[data-target]").forEach((x) => x.classList.toggle("sel", x === b));
+        buzz(8);
+      }));
+    target.addEventListener("input", () => {
+      target.value = digits(target.value) ? group(digits(target.value)) : "";
+    });
+    const doSave = once((t) => { updateGoal(id, name.value, t); close(); });
+    const submit = () => {
+      const t = Number(digits(target.value));
+      if (!name.value.trim()) { shake(name); name.focus(); return; }
+      if (!(t > 0)) { shake(target); target.focus(); return; }
+      doSave(t);
+    };
+    $("#eg-save", root).addEventListener("click", submit);
+    root.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+  });
+}
+
+/* ------------------------- editar / borrar movimientos ------------------------- */
+function openMoveOptions(id) {
+  const m = state.moves.find((x) => x.id === id);
+  if (!m) return;
+  const out = m.type === "withdraw";
+  openSheet(out ? "Retiro" : "Aporte", `${money(m.amount)} · ${fmtDate(m.ts)}`, `
+    <div class="sheet-actions" style="flex-direction:column;margin-top:6px">
+      <button class="btn-filled press" id="mv-edit" style="width:100%">Editar monto</button>
+      <button class="btn-tonal press btn-danger" id="mv-del" style="width:100%">Eliminar movimiento</button>
+    </div>`, (root, close) => {
+    $("#mv-edit", root).addEventListener("click", once(() => { close(); setTimeout(() => openEditMove(id), 180); }));
+    $("#mv-del", root).addEventListener("click", once(() => {
+      close();
+      setTimeout(() => openConfirm("¿Eliminar este movimiento?", "El ahorro de la meta se ajustará automáticamente.", () => deleteMove(id)), 180);
+    }));
+  });
+}
+
+function openEditMove(id) {
+  const m = state.moves.find((x) => x.id === id);
+  if (!m) return;
+  openSheet("Editar movimiento", `${m.name || (m.type === "withdraw" ? "Retiro" : "Aporte")} · ${fmtDate(m.ts)}`, `
+    <div class="amount-wrap">
+      <span class="cur">$</span>
+      <input id="em-amt" inputmode="numeric" autocomplete="off" value="${group(m.amount)}" aria-label="Monto del movimiento" />
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-tonal press" data-close>Cancelar</button>
+      <button class="btn-filled press" id="em-save">Guardar</button>
+    </div>`, (root, close) => {
+    const amt = $("#em-amt", root);
+    amt.addEventListener("input", () => {
+      amt.value = digits(amt.value) ? group(digits(amt.value)) : "";
+    });
+    const doSave = once((v) => { editMoveAmount(id, v); close(); });
+    const submit = () => {
+      const v = Number(digits(amt.value));
+      if (!(v > 0)) { shake(amt); amt.focus(); return; }
+      doSave(v);
+    };
+    $("#em-save", root).addEventListener("click", submit);
+    root.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+  });
+}
+
 /* ------------------------- aportar ------------------------- */
 function openDeposit(id) {
   const g = state.goals.find((x) => x.id === id);
@@ -1012,10 +1199,12 @@ function openGoalOptions(id) {
     <div class="sheet-actions" style="flex-direction:column;margin-top:6px">
       <button class="btn-filled press" id="o-add" style="width:100%">Añadir dinero</button>
       <button class="btn-tonal press" id="o-withdraw" style="width:100%">Retirar dinero</button>
+      <button class="btn-tonal press" id="o-edit" style="width:100%">Editar meta</button>
       <button class="btn-tonal press btn-danger" id="o-del" style="width:100%">Eliminar meta</button>
     </div>`, (root, close) => {
     $("#o-add", root).addEventListener("click", once(() => { close(); setTimeout(() => openDeposit(id), 180); }));
     $("#o-withdraw", root).addEventListener("click", once(() => { close(); setTimeout(() => openWithdraw(id), 180); }));
+    $("#o-edit", root).addEventListener("click", once(() => { close(); setTimeout(() => openEditGoal(id), 180); }));
     $("#o-del", root).addEventListener("click", once(() => {
       close();
       setTimeout(() => openConfirm(`¿Eliminar "${g.name}"?`, "Se borrará la meta. Los aportes ya registrados quedan en el historial.", () => deleteGoal(id)), 180);
@@ -1159,6 +1348,12 @@ $("#ringToggle")?.addEventListener("click", () => {
 });
 $("#newGoalBtn")?.addEventListener("click", () => openNewGoal());
 $("#emptyCreate")?.addEventListener("click", () => openNewGoal());
+$("#histGoal")?.addEventListener("change", (e) => { historyFilter.goal = e.target.value; renderHistory(); });
+$("#histPeriod")?.addEventListener("change", (e) => { historyFilter.period = e.target.value; renderHistory(); });
+$("#historyList")?.addEventListener("click", (e) => {
+  const li = e.target.closest?.("[data-move]");
+  if (li) openMoveOptions(li.dataset.move);
+});
 
 applyThemeMode(state.themeMode || "auto");
 applyDynamic(state.dynamicColor !== false);
