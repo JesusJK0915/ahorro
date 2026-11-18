@@ -139,7 +139,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     val iconSize = if (settings.hideDockLabels) 28.dp else 20.dp
 
     Box(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 22.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Box(

@@ -57,9 +57,9 @@ fun Modifier.liquidGlass(
 }
 
 /**
- * Vidrio líquido estilo iOS para el dock flotante: píldora con sombra
- * profunda, reflejo superior y borde luminoso. Usa solo imports ya
- * presentes en este archivo para evitar errores de compilación.
+ * Vidrio líquido estilo iOS para el dock flotante: sin relleno negro,
+ * solo un tinte blanco muy tenue, reflejo superior, borde luminoso y
+ * sombra para que parezca suspendido sobre el contenido.
  */
 @Composable
 fun Modifier.iosDockGlass(settings: Settings): Modifier {
@@ -68,7 +68,6 @@ fun Modifier.iosDockGlass(settings: Settings): Modifier {
     val cs = MaterialTheme.colorScheme
     val opaque = settings.glassStyle == "opaque"
     val shape = RoundedCornerShape(50)
-    val glassAlpha = 0.30f - (settings.glassTransparency / 100f) * 0.20f
 
     return this
         .shadow(
@@ -77,7 +76,10 @@ fun Modifier.iosDockGlass(settings: Settings): Modifier {
             ambientColor = Color.Black.copy(alpha = 0.55f),
             spotColor = cs.primary.copy(alpha = 0.35f),
         )
-        .background(Color.Black.copy(alpha = glassAlpha), shape)
+        .background(
+            Color.White.copy(alpha = if (opaque) 0.04f else 0.08f),
+            shape,
+        )
         .background(
             Brush.verticalGradient(
                 colors = listOf(
