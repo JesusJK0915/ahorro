@@ -144,10 +144,10 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .padding(horizontal = 14.dp)
-                .widthIn(max = 492.dp)
-                .liquidGlass(settings, shape = RoundedCornerShape(50))
-                .padding(7.dp)
+                .padding(horizontal = 20.dp)
+                .widthIn(max = 560.dp)
+                .iosDockGlass(settings)
+                .padding(10.dp)
                 .clip(RoundedCornerShape(50))
                 .drawBehind {
                     val x = sheen * size.width
@@ -155,7 +155,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         brush = Brush.linearGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.White.copy(alpha = 0.18f),
+                                Color.White.copy(alpha = 0.28f),
                                 Color.Transparent,
                             ),
                             start = Offset(x - size.width * 0.3f, 0f),
