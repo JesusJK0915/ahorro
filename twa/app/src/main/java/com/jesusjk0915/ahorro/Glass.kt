@@ -13,8 +13,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
 /**
- * Cristal líquido estilo iOS: borde luminoso y sombra suave, SIN relleno.
- * Al no pintar fondo, lo que hay detrás se ve tal cual y el efecto es real.
+ * Cristal líquido estilo iOS: borde luminoso, sombra suave y fondo translúcido real.
+ * El fondo usa glassTransparency para que se vean los colores de atrás
+ * (por ejemplo, si pasa por una pared roja, se refleja el rojo).
  * En "opaco" el borde y la sombra se atenúan.
  */
 @Composable
@@ -27,7 +28,14 @@ fun Modifier.liquidGlass(
     val cs = MaterialTheme.colorScheme
     val opaque = settings.glassStyle == "opaque"
 
+    // Fondo translúcido real: 0 = más sólido, 100 = más transparente.
+    val glassAlpha = 0.35f - (settings.glassTransparency / 100f) * 0.25f
+
     return this
+        .background(
+            Color.Black.copy(alpha = glassAlpha),
+            shape,
+        )
         .shadow(
             elevation = if (opaque) 3.dp else 10.dp,
             shape = shape,
