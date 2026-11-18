@@ -1,5 +1,6 @@
 package com.jesusjk0915.ahorro
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -157,7 +158,7 @@ private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(40.dp).androidx.compose.foundation.background(
+                Modifier.size(40.dp).background(
                     color.copy(alpha = 0.15f),
                     androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
                 ),
