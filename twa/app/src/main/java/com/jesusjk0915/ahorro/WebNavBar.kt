@@ -208,14 +208,14 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    cs.primary.copy(alpha = 0.12f),
-                                    cs.secondary.copy(alpha = 0.08f),
+                                    Color.White.copy(alpha = 0.28f),
+                                    cs.primary.copy(alpha = 0.38f),
                                     Color.Transparent,
                                 ),
                             ),
                             RoundedCornerShape(50),
                         )
-                        .blur(14.dp)
+                        .blur(22.dp)
                         .clip(RoundedCornerShape(50)),
                 )
             }
