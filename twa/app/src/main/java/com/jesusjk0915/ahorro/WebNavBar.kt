@@ -40,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -211,27 +210,8 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
-            // Niebla de cristal: usa la altura ya medida del contenido para
-            // cubrir el dock y aplicar desenfoque real.
-            if (settings.glass) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(hs[tab])
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.28f),
-                                    cs.primary.copy(alpha = 0.38f),
-                                    Color.Transparent,
-                                ),
-                            ),
-                            RoundedCornerShape(50),
-                        )
-                        .blur(22.dp)
-                        .clip(RoundedCornerShape(50)),
-                )
-            }
+            // El desenfoque real lo dibuja BackdropBlurView desde MainActivity
+            // (captura del contenido detrás + RenderEffect), no una capa tintada.
 
             if (ws[tab] > 0.dp && hs[tab] > 0.dp) {
                 Box(
