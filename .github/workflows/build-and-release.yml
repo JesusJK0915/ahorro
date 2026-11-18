@@ -46,15 +46,24 @@ jobs:
         run: |
           chmod +x twa/gradlew
           cd twa
-          ./gradlew assembleRelease --no-daemon
-          APK_UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
-          "$ANDROID_HOME/build-tools/36.1.0/apksigner" sign \
-            --ks ../keystore.jks \
-            --ks-key-alias ahorros \
-            --ks-pass pass:"$KEYSTORE_PASSWORD" \
-            --key-pass pass:"$KEY_PASSWORD" \
-            --out app-release-signed.apk \
-            "$APK_UNSIGNED"
+          set -o pipefail
+          {
+            ./gradlew assembleRelease --no-daemon
+            APK_UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
+            "$ANDROID_HOME/build-tools/36.1.0/apksigner" sign \
+              --ks ../keystore.jks \
+              --ks-key-alias ahorros \
+              --ks-pass pass:"$KEYSTORE_PASSWORD" \
+              --key-pass pass:"$KEY_PASSWORD" \
+              --out app-release-signed.apk \
+              "$APK_UNSIGNED"
+          } 2>&1 | tee ../build.log
+
+      - name: Show build error detail
+        if: failure()
+        run: |
+          MSG=$(grep -E -A4 -B2 "error:|What went wrong|Execution failed|FAILURE:|Could not|cannot find" build.log | head -40 | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g' || tail -40 build.log | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')
+          echo "::error::$MSG"
 
       - name: Read version from app.js
         id: ver
