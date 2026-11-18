@@ -30,8 +30,6 @@ data class Settings(
     val security: String = "none", // none | device | pin | pattern
     val pinHash: String = "",
     val patternHash: String = "",
-    val notifications: Boolean = true, // recibir notificaciones
-    val dailyReminderHour: Int = 20, // hora del recordatorio diario (0-23)
 )
 
 data class AppState(

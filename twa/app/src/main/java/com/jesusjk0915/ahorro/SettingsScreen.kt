@@ -179,35 +179,6 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(18.dp))
-        Text("Notificaciones", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                SwitchRow("Notificaciones", settings.notifications) {
-                    vm.setNotifications(it)
-                    if (!it) DailyReminderReceiver(LocalContext.current).cancel(LocalContext.current)
-                    else DailyReminderReceiver(LocalContext.current).schedule(LocalContext.current, settings.dailyReminderHour)
-                }
-                if (settings.notifications) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Recordatorio diario: ${String.format("%02d:00", settings.dailyReminderHour)}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        "Se activa a las ${String.format("%02d:00", settings.dailyReminderHour)} todos los días.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(18.dp))
         Text("Actualizaciones", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
             modifier = Modifier.fillMaxWidth(),

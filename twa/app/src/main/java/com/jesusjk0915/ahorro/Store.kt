@@ -80,8 +80,6 @@ class Store(private val context: Context) {
                 security = so.optString("security", "none"),
                 pinHash = so.optString("pinHash", ""),
                 patternHash = so.optString("patternHash", ""),
-                notifications = so.optBoolean("notifications", true),
-                dailyReminderHour = so.optInt("dailyReminderHour", 20),
             )
             AppState(goals = goals, moves = moves, settings = settings)
         } catch (e: Exception) {
@@ -123,8 +121,6 @@ class Store(private val context: Context) {
                     .put("security", st.security)
                     .put("pinHash", st.pinHash)
                     .put("patternHash", st.patternHash)
-                    .put("notifications", st.notifications)
-                    .put("dailyReminderHour", st.dailyReminderHour)
             )
             prefs.edit().putString(KEY_STATE, root.toString()).apply()
         } catch (e: Exception) {
@@ -259,10 +255,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setPin(pin: String) = commit(ui.copy(settings = ui.settings.copy(pinHash = lockHash(pin))))
     fun setPattern(seq: List<Int>) = commit(
         ui.copy(settings = ui.settings.copy(patternHash = lockHash(seq.joinToString("-"))))
-    )
-    fun setNotifications(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(notifications = v)))
-    fun setDailyReminderHour(h: Int) = commit(
-        ui.copy(settings = ui.settings.copy(dailyReminderHour = h.coerceIn(0, 23)))
     )
 
     fun checkPin(pin: String): Boolean =
