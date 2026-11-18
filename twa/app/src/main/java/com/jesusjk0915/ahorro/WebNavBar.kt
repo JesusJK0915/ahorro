@@ -189,6 +189,19 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         end = Offset(size.width * 0.85f, 1f),
                         strokeWidth = 1.5f,
                     )
+                    // Efecto lente (--gx del CSS): reflejo radial que sigue
+                    // a la pestaña activa.
+                    val activeX = with(density) { xs[tab].toPx() + ws[tab].toPx() / 2f }
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.26f),
+                                Color.Transparent,
+                            ),
+                            center = Offset(activeX, size.height * 0.4f),
+                            radius = with(density) { 100.dp.toPx() },
+                        ),
+                    )
                 }
                 .graphicsLayer {
                     alpha = enter
