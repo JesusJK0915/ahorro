@@ -79,6 +79,7 @@ class Store(private val context: Context) {
                 security = so.optString("security", "none"),
                 pinHash = so.optString("pinHash", ""),
                 patternHash = so.optString("patternHash", ""),
+                statsResetAt = so.optLong("statsResetAt", 0L),
             )
             AppState(goals = goals, moves = moves, settings = settings)
         } catch (e: Exception) {
@@ -119,6 +120,7 @@ class Store(private val context: Context) {
                     .put("security", st.security)
                     .put("pinHash", st.pinHash)
                     .put("patternHash", st.patternHash)
+                    .put("statsResetAt", st.statsResetAt)
             )
             prefs.edit().putString(KEY_STATE, root.toString()).apply()
         } catch (e: Exception) {
@@ -134,6 +136,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     var ui by mutableStateOf(store.load())
         private set
+
+    private var backupMoves by mutableStateOf<List<Move>?>(null)
+    val canUndoStatsReset: Boolean get() = backupMoves != null
 
     /** Fuerza una recomposición para actualizar filtros de fecha. */
     fun refresh() {
@@ -253,6 +258,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setPattern(seq: List<Int>) = commit(
         ui.copy(settings = ui.settings.copy(patternHash = lockHash(seq.joinToString("-"))))
     )
+
+    /** Borra solo el historial; metas y ahorro se conservan. */
+    fun resetStats() {
+        backupMoves = ui.moves
+        commit(
+            ui.copy(
+                moves = emptyList(),
+                settings = ui.settings.copy(statsResetAt = System.currentTimeMillis()),
+            )
+        )
+    }
+
+    fun undoStatsReset() {
+        val moves = backupMoves ?: return
+        commit(ui.copy(moves = moves))
+        backupMoves = null
+    }
 
     fun checkPin(pin: String): Boolean =
         ui.settings.pinHash.isNotEmpty() && ui.settings.pinHash == lockHash(pin)

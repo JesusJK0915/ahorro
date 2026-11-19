@@ -141,6 +141,54 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(18.dp))
+        Text("Datos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Estadísticas e historial", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Borra los movimientos. Tus metas y el ahorro se conservan.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        vm.resetStats()
+                        onToast("Estadísticas reiniciadas")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Reiniciar estadísticas")
+                }
+                if (vm.canUndoStatsReset) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            vm.undoStatsReset()
+                            onToast("Estadísticas restauradas")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Deshacer reinicio")
+                    }
+                }
+                if (settings.statsResetAt > 0L) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Último reinicio: ${fmtDate(settings.statsResetAt)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
         Text("Seguridad", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Card(
             modifier = Modifier.fillMaxWidth(),

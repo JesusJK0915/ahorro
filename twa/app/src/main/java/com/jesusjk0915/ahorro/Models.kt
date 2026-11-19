@@ -29,6 +29,7 @@ data class Settings(
     val security: String = "none", // none | device | pin | pattern
     val pinHash: String = "",
     val patternHash: String = "",
+    val statsResetAt: Long = 0L,
 )
 
 data class AppState(
