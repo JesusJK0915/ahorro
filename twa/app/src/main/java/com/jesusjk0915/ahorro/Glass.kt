@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
 /**
- * Cristal líquido estilo iOS: borde luminoso, sombra suave y fondo translúcido real.
+ * Cristal estilo iOS: borde luminoso, sombra suave y fondo translúcido real.
  * El fondo usa glassTransparency para que se vean los colores de atrás
  * (por ejemplo, si pasa por una pared roja, se refleja el rojo).
  * En "opaco" el borde y la sombra se atenúan.

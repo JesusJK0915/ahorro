@@ -40,7 +40,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -166,21 +165,19 @@ class MainActivity : FragmentActivity() {
                             onToast = { toast(it) },
                         )
                     } else {
-                        CompositionLocalProvider(LocalGlassSettings provides vm.ui.settings) {
-                            AppContent(
-                                vm = vm,
-                                onToast = { toast(it) },
-                                onTestDevice = { onOk ->
-                                    deviceAuth { ok ->
-                                        if (ok) onOk() else toast("No se pudo autenticar")
-                                    }
-                                },
-                                onLockNow = { lockedState.value = true },
-                                deviceLockAvailable = deviceLockAvailable,
-                                shortcut = shortcut,
-                                onShortcutConsumed = { shortcut = null },
-                            )
-                        }
+                        AppContent(
+                            vm = vm,
+                            onToast = { toast(it) },
+                            onTestDevice = { onOk ->
+                                deviceAuth { ok ->
+                                    if (ok) onOk() else toast("No se pudo autenticar")
+                                }
+                            },
+                            onLockNow = { lockedState.value = true },
+                            deviceLockAvailable = deviceLockAvailable,
+                            shortcut = shortcut,
+                            onShortcutConsumed = { shortcut = null },
+                        )
                     }
                     if (!locked && welcomeState.value) {
                         WelcomeScreen(

@@ -13,8 +13,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -55,8 +53,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,9 +102,6 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
 
     var entered by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { entered = true }
-
-    // Lente líquida: el reflejo radial sigue el dedo al deslizar sobre el dock.
-    var lens by remember { mutableStateOf<Offset?>(null) }
     val enter by animateFloatAsState(
         targetValue = if (entered) 1f else 0f,
         animationSpec = bouncy,
@@ -146,9 +139,9 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
 
     val labels = listOf("Metas", "Historial", "Logros", "Ajustes")
     val iconSize = if (settings.hideDockLabels) 28.dp else 20.dp
-    // El difuminado sigue el slider de transparencia del cristal líquido.
-    val glassBlur = (10 + settings.glassTransparency * 24 / 100).dp
-    val fogAlpha = 0.12f + settings.glassTransparency / 100f * 0.24f
+    // El difuminado sigue el slider de transparencia del cristal.
+    val glassBlur = (6 + settings.glassTransparency * 18 / 100).dp
+    val fogAlpha = 0.10f + settings.glassTransparency / 100f * 0.22f
 
     Box(
         modifier = Modifier.fillMaxWidth().padding(bottom = 22.dp),
@@ -164,7 +157,7 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                 .drawBehind {
                     val x = sheen * size.width
                     if (settings.glass) {
-                        // Cristal líquido activo: reflejos del vidrio y lente.
+                        // Cristal activo: reflejos del vidrio.
                         // Barrido ancho y difuso, como el reflejo del vidrio.
                         drawRect(
                             brush = Brush.linearGradient(
@@ -230,18 +223,6 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         )
                     }
                 }
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        lens = down.position
-                        while (true) {
-                            val event = awaitPointerEvent(PointerEventPass.Main)
-                            if (event.changes.none { it.pressed }) break
-                            event.changes.firstOrNull { it.id == down.id }?.let { lens = it.position }
-                        }
-                        lens = null
-                    }
-                }
                 .graphicsLayer {
                     alpha = enter
                     translationY = (1f - enter) * enterOffset
@@ -250,18 +231,6 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                     scaleY = s
                 },
         ) {
-            // Cristal líquido con blur real y lente que sigue el dedo (o la pestaña activa).
-            val lensPoint = lens ?: if (hs[tab] > 0.dp) Offset(
-                with(density) { xs[tab].toPx() + ws[tab].toPx() / 2f },
-                with(density) { hs[tab].toPx() / 2f },
-            ) else null
-            GlassLayer(
-                Modifier.matchParentSize(),
-                RoundedCornerShape(50),
-                alpha = 0.95f,
-                lens = lensPoint,
-            )
-
             // Niebla del cristal: difumina los colores que atraviesan el dock.
             // Usa blur de Compose (seguro; no captura el View root).
             if (settings.glass && hs[tab] > 0.dp) {

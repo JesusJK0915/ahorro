@@ -1,5 +1,5 @@
 {
-  "version": "2.5.2",
-  "url": "https://github.com/JesusJK0915/ahorro/releases/download/v2.5.2/app-release-signed.apk",
-  "notes": "Nueva version 2.5.2."
+  "version": "2.5.3",
+  "url": "https://github.com/JesusJK0915/ahorro/releases/download/v2.5.3/app-release-signed.apk",
+  "notes": "Se quita el Cristal Liquido y vuelve el aspecto anterior. Se conservan respaldo JSON, bloqueo al salir, aportes rapidos, fecha limite, selector de mes e historial agrupado."
 }

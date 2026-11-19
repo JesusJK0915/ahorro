@@ -108,7 +108,7 @@ fun SettingsScreen(
         ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
                 SwitchRow("Colores del fondo de pantalla", settings.dynamicColor) { vm.setDynamicColor(it) }
-                SwitchRow("Cristal líquido", settings.glass) { vm.setGlass(it) }
+                SwitchRow("Cristal", settings.glass) { vm.setGlass(it) }
                 if (settings.glass) {
                     Spacer(Modifier.height(4.dp))
                     Text(

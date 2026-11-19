@@ -5,14 +5,12 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,7 +27,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -55,37 +52,28 @@ private fun BaseSheet(title: String, subtitle: String? = null, onDismiss: () -> 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color.Transparent,
     ) {
-        Box(Modifier.fillMaxWidth()) {
-            // Cristal líquido detrás del contenido: blur real de Compose.
-            GlassLayer(
-                Modifier.matchParentSize(),
-                RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                alpha = 0.85f,
-            )
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .graphicsLayer {
-                        alpha = p.coerceIn(0f, 1f)
-                        translationY = (1f - p) * 18f
-                        val s = 0.94f + 0.06f * p
-                        scaleX = s
-                        scaleY = s
-                    },
-            ) {
-                Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                if (subtitle != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(subtitle, style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Spacer(Modifier.height(18.dp))
-                content()
-                Spacer(Modifier.height(16.dp))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .graphicsLayer {
+                    alpha = p.coerceIn(0f, 1f)
+                    translationY = (1f - p) * 18f
+                    val s = 0.94f + 0.06f * p
+                    scaleX = s
+                    scaleY = s
+                },
+        ) {
+            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            if (subtitle != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Spacer(Modifier.height(18.dp))
+            content()
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
