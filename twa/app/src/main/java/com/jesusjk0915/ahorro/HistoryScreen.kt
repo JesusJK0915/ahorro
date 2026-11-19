@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.item
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -166,13 +167,41 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
                 }
             }
         } else {
+            val groups = moves.groupBy { dayKey(it.ts) }.entries.sortedByDescending { it.key }
             LazyColumn(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                items(moves, key = { it.id }) { m ->
-                    MoveRow(m, hide, onMoveClick)
+                groups.forEach { (day, ofDay) ->
+                    item(key = "header_$day") { DayHeader(day, ofDay, hide) }
+                    items(ofDay, key = { "move_" + it.id }) { m ->
+                        MoveRow(m, hide, onMoveClick)
+                    }
                 }
             }
         }
         Spacer(Modifier.height(96.dp))
+    }
+}
+
+/** Encabezado por día con subtotal del grupo. */
+@Composable
+private fun DayHeader(day: String, ofDay: List<Move>, hide: Boolean) {
+    val ts = ofDay.firstOrNull()?.ts ?: 0L
+    val subtotal = ofDay.sumOf { if (it.withdraw) -it.amount else it.amount }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            fmtDay(ts),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            "${ofDay.size} mov. · ${money(subtotal, hide)}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

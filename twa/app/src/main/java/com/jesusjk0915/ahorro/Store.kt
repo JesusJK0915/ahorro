@@ -34,8 +34,22 @@ class Store(private val context: Context) {
         prefs.edit().putBoolean(KEY_WELCOME, true).apply()
     }
 
-    fun load(): AppState {
-        val raw = prefs.getString(KEY_STATE, null) ?: return AppState()
+    fun load(): AppState = try {
+        val raw = prefs.getString(KEY_STATE, null)
+        if (raw.isNullOrEmpty()) AppState() else parseState(raw)
+    } catch (e: Exception) {
+        AppState()
+    }
+
+    /** Convierte un respaldo JSON en estado; devuelve null si no es válido. */
+    fun restoreJson(raw: String): AppState? = try {
+        val root = JSONObject(raw)
+        if (!root.has("goals") && !root.has("moves")) null else parseState(raw)
+    } catch (e: Exception) {
+        null
+    }
+
+    private fun parseState(raw: String): AppState {
         return try {
             val root = JSONObject(raw)
             val goals = mutableListOf<Goal>()
@@ -50,6 +64,7 @@ class Store(private val context: Context) {
                         saved = o.optLong("saved", 0L),
                         tint = o.optInt("tint", 0),
                         ts = o.optLong("ts", System.currentTimeMillis()),
+                        deadline = o.optLong("deadline", 0L),
                     )
                 )
             }
@@ -82,6 +97,7 @@ class Store(private val context: Context) {
                 statsResetAt = so.optLong("statsResetAt", 0L),
                 featuredGoalId = so.optString("featuredGoalId", ""),
                 hideAmounts = so.optBoolean("hideAmounts", false),
+                lockOnLeave = so.optBoolean("lockOnLeave", false),
             )
             AppState(goals = goals, moves = moves, settings = settings)
         } catch (e: Exception) {
@@ -91,13 +107,23 @@ class Store(private val context: Context) {
 
     fun save(state: AppState) {
         try {
-            val root = JSONObject()
+            prefs.edit().putString(KEY_STATE, backupJson(state)).apply()
+            AhorrosWidget.refresh(context)
+        } catch (e: Exception) {
+            // Nunca debe romper la app por no poder guardar.
+        }
+    }
+
+    /** Serializa metas, movimientos y ajustes para el respaldo local JSON. */
+    fun backupJson(state: AppState): String {
+        val root = JSONObject()
             val ga = JSONArray()
             state.goals.forEach { g ->
                 ga.put(
                     JSONObject()
                         .put("id", g.id).put("name", g.name).put("target", g.target)
                         .put("saved", g.saved).put("tint", g.tint).put("ts", g.ts)
+                        .put("deadline", g.deadline)
                 )
             }
             val ma = JSONArray()
@@ -125,12 +151,9 @@ class Store(private val context: Context) {
                     .put("statsResetAt", st.statsResetAt)
                     .put("featuredGoalId", st.featuredGoalId)
                     .put("hideAmounts", st.hideAmounts)
+                    .put("lockOnLeave", st.lockOnLeave)
             )
-            prefs.edit().putString(KEY_STATE, root.toString()).apply()
-            AhorrosWidget.refresh(context)
-        } catch (e: Exception) {
-            // Nunca debe romper la app por no poder guardar.
-        }
+        return root.toString()
     }
 }
 
@@ -163,7 +186,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         store.save(next)
     }
 
-    fun addGoal(name: String, target: Long) {
+    fun addGoal(name: String, target: Long, deadline: Long = 0L) {
         val clean = name.trim().take(42)
         if (clean.isEmpty() || target <= 0) return
         val g = Goal(
@@ -173,16 +196,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             saved = 0,
             tint = ui.goals.size % TINTS.size,
             ts = System.currentTimeMillis(),
+            deadline = deadline,
         )
         commit(ui.copy(goals = listOf(g) + ui.goals))
     }
 
-    fun editGoal(id: String, name: String, target: Long) {
+    fun editGoal(id: String, name: String, target: Long, deadline: Long = 0L) {
         val clean = name.trim().take(42)
         if (clean.isEmpty() || target <= 0) return
         commit(
             ui.copy(
-                goals = ui.goals.map { if (it.id == id) it.copy(name = clean, target = target) else it },
+                goals = ui.goals.map {
+                    if (it.id == id) it.copy(name = clean, target = target, deadline = deadline) else it
+                },
                 moves = ui.moves.map { if (it.goalId == id) it.copy(name = clean) else it },
             )
         )
@@ -297,6 +323,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setHideDockLabels(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(hideDockLabels = v)))
     fun setFeaturedGoal(id: String) = commit(ui.copy(settings = ui.settings.copy(featuredGoalId = id)))
     fun setHideAmounts(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(hideAmounts = v)))
+    fun setLockOnLeave(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(lockOnLeave = v)))
+
+    /** Respaldo local: JSON con todo el estado, sin red. */
+    fun backupJson(): String = store.backupJson(ui)
+
+    /** Restaura un respaldo reemplazando metas, movimientos y ajustes. */
+    fun restoreJson(raw: String): Boolean {
+        val next = store.restoreJson(raw) ?: return false
+        lastDeletedGoal = null
+        lastDeletedMove = null
+        backupMoves = null
+        commit(next)
+        return true
+    }
     fun setSecurity(method: String) = commit(ui.copy(settings = ui.settings.copy(security = method)))
     fun setPin(pin: String) = commit(ui.copy(settings = ui.settings.copy(pinHash = lockHash(pin))))
     fun setPattern(seq: List<Int>) = commit(

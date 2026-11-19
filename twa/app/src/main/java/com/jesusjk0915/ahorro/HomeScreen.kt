@@ -43,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -395,6 +396,16 @@ private fun GoalCard(g: Goal, hide: Boolean = false, featured: Boolean = false, 
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (g.deadline > 0L) {
+                    Spacer(Modifier.height(4.dp))
+                    val days = daysUntil(g.deadline)
+                    Text(
+                        if (days <= 0) "Fecha límite vencida"
+                        else "Te faltan ${money(perDayNeeded(g), hide)}/día · $days días",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (days <= 0) MaterialTheme.colorScheme.error else color,
+                    )
+                }
                 Spacer(Modifier.height(10.dp))
                 WaveProgress(p, color)
             }
@@ -415,11 +426,12 @@ private fun StatsCard(vm: AppViewModel, hide: Boolean = false) {
     val completed = vm.ui.goals.count { it.target > 0 && it.saved >= it.target }
     val streak = savingsStreak(moves)
     var selectedDay by remember { mutableStateOf<Int?>(null) }
-    val key = monthKey(System.currentTimeMillis())
+    var monthOffset by remember { mutableIntStateOf(0) }
+    val key = monthKeyForOffset(monthOffset)
     val inMes = moves.filter { !it.withdraw && monthKey(it.ts) == key }
     val outMes = moves.filter { it.withdraw && monthKey(it.ts) == key }
     val buckets = last7(moves)
-    val calendar = monthCalendar(moves)
+    val calendar = monthCalendar(moves, monthOffset)
     val maxNet = buckets.maxOf { abs(it.net) }.coerceAtLeast(1)
     val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
 
@@ -434,11 +446,13 @@ private fun StatsCard(vm: AppViewModel, hide: Boolean = false) {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Estadísticas", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = { monthOffset-- }) { Text("‹") }
                 Text(
-                    "Este mes",
+                    calendar.first,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                TextButton(onClick = { monthOffset++ }) { Text("›") }
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -455,6 +469,12 @@ private fun StatsCard(vm: AppViewModel, hide: Boolean = false) {
                 StatBox("Metas cumplidas", "$completed", Modifier.weight(1f))
                 StatBox("Racha", "$streak días", Modifier.weight(1f))
             }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Neto del periodo: ${money(inMes.sumOf { it.amount } - outMes.sumOf { it.amount }, hide)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(18.dp))
             Text("Últimos 7 días", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(8.dp))

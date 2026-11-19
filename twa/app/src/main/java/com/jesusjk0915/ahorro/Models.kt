@@ -8,6 +8,7 @@ data class Goal(
     val saved: Long,
     val tint: Int,
     val ts: Long,
+    val deadline: Long = 0L, // 0 = sin fecha límite
 )
 
 data class Move(
@@ -32,6 +33,7 @@ data class Settings(
     val statsResetAt: Long = 0L,
     val featuredGoalId: String = "", // meta fijada arriba y en el widget
     val hideAmounts: Boolean = false, // privacidad rápida en la pantalla
+    val lockOnLeave: Boolean = false, // bloquear al salir de la app
 )
 
 data class AppState(

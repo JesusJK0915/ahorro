@@ -21,7 +21,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -46,12 +48,16 @@ fun GoalCelebration(name: String, onDone: () -> Unit) {
                 stiffness = Spring.StiffnessMediumLow,
             ),
         )
-        delay(850)
+        delay(1150)
         onDone()
     }
     val p = anim.value
     val cs = MaterialTheme.colorScheme
-    val colors = listOf(cs.primary, cs.tertiary, cs.secondary, Color.White)
+    val colors = listOf(
+        cs.primary, cs.tertiary, cs.secondary,
+        cs.primaryContainer, cs.tertiaryContainer,
+        Color(0xFFFFC94D), Color.White,
+    )
 
     Box(
         modifier = Modifier.fillMaxSize().clickable { onDone() },
@@ -59,16 +65,29 @@ fun GoalCelebration(name: String, onDone: () -> Unit) {
     ) {
         Canvas(Modifier.fillMaxSize()) {
             val t = p.coerceIn(0f, 1f)
-            repeat(40) { i ->
+            // Más confeti, con colores Material You y piezas giratorias.
+            repeat(90) { i ->
                 val angle = i * 2.399963f
-                val radius = (70f + (i % 7) * 28f) * density * t
+                val radius = (70f + (i % 11) * 26f) * density * t
                 val x = size.width / 2f + cos(angle) * radius
                 val y = size.height * 0.40f + sin(angle) * radius + 300f * density * t * t
-                drawCircle(
-                    color = colors[i % colors.size].copy(alpha = 0.85f),
-                    radius = (3f + (i % 3)) * density,
-                    center = Offset(x, y),
-                )
+                val piece = colors[i % colors.size].copy(alpha = 0.9f)
+                if (i % 3 == 0) {
+                    rotate(angle * 57.2958f + t * 180f) {
+                        drawRoundRect(
+                            color = piece,
+                            topLeft = Offset(x, y),
+                            size = Size(7f * density, 12f * density),
+                            cornerRadius = CornerRadius(2f * density),
+                        )
+                    }
+                } else {
+                    drawCircle(
+                        color = piece,
+                        radius = (3f + (i % 4)) * density,
+                        center = Offset(x, y),
+                    )
+                }
             }
         }
 

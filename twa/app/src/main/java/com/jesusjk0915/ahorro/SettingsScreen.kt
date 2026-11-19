@@ -2,6 +2,8 @@ package com.jesusjk0915.ahorro
 
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -77,6 +79,17 @@ fun SettingsScreen(
     var checking by remember { mutableStateOf(false) }
     var update by remember { mutableStateOf<UpdateInfo?>(null) }
     var updateError by remember { mutableStateOf(false) }
+    var pendingRestore by remember { mutableStateOf<String?>(null) }
+
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        try {
+            val text = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            if (text != null) pendingRestore = text else onToast("No se pudo leer el respaldo")
+        } catch (e: Exception) {
+            onToast("No se pudo leer el respaldo")
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -217,6 +230,28 @@ fun SettingsScreen(
                 ) {
                     Text("Exportar y compartir CSV")
                 }
+                Spacer(Modifier.height(16.dp))
+                Text("Respaldo completo", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Guarda metas, movimientos y ajustes en un JSON. No se sube a ningún servidor.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = { exportBackup(context, vm.backupJson(), onToast) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Exportar respaldo JSON")
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Restaurar respaldo")
+                }
             }
         }
 
@@ -247,6 +282,9 @@ fun SettingsScreen(
                     if (settings.patternHash.isEmpty()) patternSetup = true else vm.setSecurity("pattern")
                 }
                 if (settings.security != "none") {
+                    SwitchRow("Bloquear al salir de la app", settings.lockOnLeave) {
+                        vm.setLockOnLeave(it)
+                    }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = onLockNow, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Lock, contentDescription = null)
@@ -377,6 +415,24 @@ fun SettingsScreen(
             dismissButton = { TextButton(onClick = { patternSetup = false; firstPattern = emptyList() }) { Text("Cancelar") } },
         )
     }
+
+    pendingRestore?.let { raw ->
+        AlertDialog(
+            onDismissRequest = { pendingRestore = null },
+            title = { Text("Restaurar respaldo") },
+            text = {
+                Text("Se reemplazarán tus metas, movimientos y ajustes actuales. Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val ok = vm.restoreJson(raw)
+                    pendingRestore = null
+                    onToast(if (ok) "Respaldo restaurado" else "El respaldo no es válido")
+                }) { Text("Restaurar") }
+            },
+            dismissButton = { TextButton(onClick = { pendingRestore = null }) { Text("Cancelar") } },
+        )
+    }
 }
 
 @Composable
@@ -417,5 +473,22 @@ private fun exportCsv(context: Context, moves: List<Move>, onToast: (String) -> 
         context.startActivity(Intent.createChooser(send, "Compartir historial"))
     } catch (e: Exception) {
         onToast("No se pudo exportar el historial")
+    }
+}
+
+/** JSON completo en almacenamiento privado y compartido con FileProvider (sin red). */
+private fun exportBackup(context: Context, json: String, onToast: (String) -> Unit) {
+    try {
+        val file = File(context.filesDir, "ahorro_respaldo.json")
+        file.writeText(json, Charsets.UTF_8)
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "application/json"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(send, "Compartir respaldo"))
+    } catch (e: Exception) {
+        onToast("No se pudo exportar el respaldo")
     }
 }

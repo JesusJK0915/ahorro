@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -113,6 +114,7 @@ class MainActivity : FragmentActivity() {
     private val vm: AppViewModel by viewModels()
     private var downloadReceiver: BroadcastReceiver? = null
     private var shortcut by mutableStateOf<String?>(null)
+    private val lockedState = mutableStateOf(false)
 
     /** Evita que el prompt del sistema dispare un segundo bloqueo al volver del background. */
     private var authInProgress = false
@@ -136,7 +138,7 @@ class MainActivity : FragmentActivity() {
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
         ) == BiometricManager.BIOMETRIC_SUCCESS
 
-        val lockedState = mutableStateOf(vm.ui.settings.security != "none")
+        lockedState.value = vm.ui.settings.security != "none"
         val welcomeState = mutableStateOf(!vm.welcomeSeen())
 
         setContent {
@@ -164,19 +166,21 @@ class MainActivity : FragmentActivity() {
                             onToast = { toast(it) },
                         )
                     } else {
-                        AppContent(
-                            vm = vm,
-                            onToast = { toast(it) },
-                            onTestDevice = { onOk ->
-                                deviceAuth { ok ->
-                                    if (ok) onOk() else toast("No se pudo autenticar")
-                                }
-                            },
-                            onLockNow = { lockedState.value = true },
-                            deviceLockAvailable = deviceLockAvailable,
-                            shortcut = shortcut,
-                            onShortcutConsumed = { shortcut = null },
-                        )
+                        CompositionLocalProvider(LocalGlassSettings provides vm.ui.settings) {
+                            AppContent(
+                                vm = vm,
+                                onToast = { toast(it) },
+                                onTestDevice = { onOk ->
+                                    deviceAuth { ok ->
+                                        if (ok) onOk() else toast("No se pudo autenticar")
+                                    }
+                                },
+                                onLockNow = { lockedState.value = true },
+                                deviceLockAvailable = deviceLockAvailable,
+                                shortcut = shortcut,
+                                onShortcutConsumed = { shortcut = null },
+                            )
+                        }
                     }
                     if (!locked && welcomeState.value) {
                         WelcomeScreen(
@@ -273,6 +277,14 @@ class MainActivity : FragmentActivity() {
         super.onNewIntent(intent)
         handleInstallIntent(intent)
         shortcut = shortcutAction(intent)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Bloqueo automático al salir de la app (opción de Seguridad).
+        if (!authInProgress && vm.ui.settings.security != "none" && vm.ui.settings.lockOnLeave) {
+            lockedState.value = true
+        }
     }
 
     override fun onDestroy() {
@@ -451,12 +463,16 @@ private fun AppContent(
     when (val s = sheet) {
         is SheetState.NewGoal -> GoalFormSheet(
             goal = null,
-            onSave = { name, target -> vm.addGoal(name, target); sheet = null; onToast("Meta creada") },
+            onSave = { name, target, deadline ->
+                vm.addGoal(name, target, deadline); sheet = null; onToast("Meta creada")
+            },
             onDismiss = { sheet = null },
         )
         is SheetState.EditGoal -> GoalFormSheet(
             goal = s.goal,
-            onSave = { name, target -> vm.editGoal(s.goal.id, name, target); sheet = null; onToast("Meta actualizada") },
+            onSave = { name, target, deadline ->
+                vm.editGoal(s.goal.id, name, target, deadline); sheet = null; onToast("Meta actualizada")
+            },
             onDismiss = { sheet = null },
         )
         is SheetState.GoalOptions -> GoalOptionsSheet(
@@ -484,6 +500,7 @@ private fun AppContent(
             title = "Añadir dinero",
             subtitle = s.goal.name,
             confirmLabel = "Añadir",
+            quickFrom = (s.goal.target - s.goal.saved).coerceAtLeast(0L),
             onConfirm = { amount ->
                 val before = s.goal
                 vm.deposit(before.id, amount)

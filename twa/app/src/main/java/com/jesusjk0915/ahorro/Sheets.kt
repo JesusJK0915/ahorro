@@ -1,15 +1,19 @@
 package com.jesusjk0915.ahorro
 
+import android.app.DatePickerDialog
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,9 +30,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,28 +56,37 @@ private fun BaseSheet(title: String, subtitle: String? = null, onDismiss: () -> 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = Color.Transparent,
     ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .graphicsLayer {
-                    alpha = p.coerceIn(0f, 1f)
-                    translationY = (1f - p) * 18f
-                    val s = 0.94f + 0.06f * p
-                    scaleX = s
-                    scaleY = s
-                },
-        ) {
-            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            if (subtitle != null) {
-                Spacer(Modifier.height(4.dp))
-                Text(subtitle, style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(Modifier.fillMaxWidth()) {
+            // Cristal líquido detrás del contenido: blur real de Compose.
+            GlassLayer(
+                Modifier.matchParentSize(),
+                RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                alpha = 0.85f,
+            )
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .graphicsLayer {
+                        alpha = p.coerceIn(0f, 1f)
+                        translationY = (1f - p) * 18f
+                        val s = 0.94f + 0.06f * p
+                        scaleX = s
+                        scaleY = s
+                    },
+            ) {
+                Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                if (subtitle != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(subtitle, style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.height(18.dp))
+                content()
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(18.dp))
-            content()
-            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -112,10 +129,25 @@ fun AmountSheet(
     confirmLabel: String,
     onConfirm: (Long) -> Unit,
     onDismiss: () -> Unit,
+    quickFrom: Long = 0L,
 ) {
     var amount by remember { mutableStateOf("") }
     BaseSheet(title, subtitle, onDismiss) {
         AmountField("Monto", amount) { amount = it }
+        if (quickFrom > 0L) {
+            Spacer(Modifier.height(12.dp))
+            Text("Aporte rápido", style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(10L, 25L, 50L).forEach { p ->
+                    OutlinedButton(
+                        onClick = { amount = (quickFrom * p / 100L).toString() },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("$p%") }
+                }
+            }
+        }
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancelar") }
@@ -132,11 +164,13 @@ fun AmountSheet(
 @Composable
 fun GoalFormSheet(
     goal: Goal?,
-    onSave: (String, Long) -> Unit,
+    onSave: (String, Long, Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf(goal?.name ?: "") }
     var target by remember { mutableStateOf(if (goal == null) "" else goal.target.toString()) }
+    var deadline by remember { mutableStateOf(goal?.deadline ?: 0L) }
     BaseSheet(
         title = if (goal == null) "Nueva meta" else "Editar meta",
         subtitle = if (goal == null) "¿Qué quieres ahorrar?" else "Cambia el nombre o el monto objetivo.",
@@ -162,11 +196,38 @@ fun GoalFormSheet(
                 }
             }
         }
+        Spacer(Modifier.height(14.dp))
+        Text("Fecha límite", style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(6.dp))
+        OutlinedButton(
+            onClick = {
+                val cal = Calendar.getInstance()
+                if (deadline > 0L) cal.timeInMillis = deadline
+                DatePickerDialog(
+                    context,
+                    { _, year, month, day ->
+                        val picked = Calendar.getInstance()
+                        picked.set(year, month, day, 23, 59, 59)
+                        deadline = picked.timeInMillis
+                    },
+                    cal.get(Calendar.YEAR),
+                    cal.get(Calendar.MONTH),
+                    cal.get(Calendar.DAY_OF_MONTH),
+                ).show()
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (deadline > 0L) "Vence el ${fmtDay(deadline)}" else "Sin fecha límite")
+        }
+        if (deadline > 0L) {
+            TextButton(onClick = { deadline = 0L }) { Text("Quitar fecha límite") }
+        }
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancelar") }
             Button(
-                onClick = { onSave(name, target.toLongOrNull() ?: 0L) },
+                onClick = { onSave(name, target.toLongOrNull() ?: 0L, deadline) },
                 enabled = name.isNotBlank() && (target.toLongOrNull() ?: 0L) > 0,
                 modifier = Modifier.weight(1f),
             ) { Text(if (goal == null) "Crear meta" else "Guardar cambios") }
