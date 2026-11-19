@@ -8,7 +8,8 @@ import java.util.Locale
 
 private val ES = Locale("es", "CO")
 
-fun money(value: Long): String {
+fun money(value: Long, hidden: Boolean = false): String {
+    if (hidden) return "••••"
     val nf = NumberFormat.getCurrencyInstance(ES)
     nf.maximumFractionDigits = 0
     nf.minimumFractionDigits = 0
@@ -32,6 +33,20 @@ fun fmtDate(ts: Long): String {
 
 fun dayKey(ts: Long): String = SimpleDateFormat("yyyy-MM-dd", ES).format(Date(ts))
 fun monthKey(ts: Long): String = SimpleDateFormat("yyyy-MM", ES).format(Date(ts))
+fun csvDate(ts: Long): String = SimpleDateFormat("yyyy-MM-dd HH:mm", ES).format(Date(ts))
+
+/** Días consecutivos con al menos un aporte (hoy o, si aún no aportó, ayer). */
+fun savingsStreak(moves: List<Move>): Int {
+    val days = moves.filter { !it.withdraw }.map { dayKey(it.ts) }.toHashSet()
+    val cal = Calendar.getInstance(ES)
+    if (!days.contains(dayKey(cal.timeInMillis))) cal.add(Calendar.DAY_OF_YEAR, -1)
+    var streak = 0
+    while (days.contains(dayKey(cal.timeInMillis))) {
+        streak++
+        cal.add(Calendar.DAY_OF_YEAR, -1)
+    }
+    return streak
+}
 
 data class DayBucket(val key: String, val label: String, val net: Long)
 

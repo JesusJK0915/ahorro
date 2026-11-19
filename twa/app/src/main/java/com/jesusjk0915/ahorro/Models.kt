@@ -30,6 +30,8 @@ data class Settings(
     val pinHash: String = "",
     val patternHash: String = "",
     val statsResetAt: Long = 0L,
+    val featuredGoalId: String = "", // meta fijada arriba y en el widget
+    val hideAmounts: Boolean = false, // privacidad rápida en la pantalla
 )
 
 data class AppState(

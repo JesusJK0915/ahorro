@@ -78,16 +78,22 @@ private fun BaseSheet(title: String, subtitle: String? = null, onDismiss: () -> 
 @Composable
 fun GoalOptionsSheet(
     goal: Goal,
+    featured: Boolean = false,
+    hide: Boolean = false,
+    onToggleFeatured: () -> Unit,
     onDismiss: () -> Unit,
     onDeposit: () -> Unit,
     onWithdraw: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    BaseSheet(goal.name, "${money(goal.saved)} de ${money(goal.target)}", onDismiss) {
+    BaseSheet(goal.name, "${money(goal.saved, hide)} de ${money(goal.target, hide)}", onDismiss) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(onClick = onDeposit, modifier = Modifier.fillMaxWidth()) { Text("Añadir dinero") }
             OutlinedButton(onClick = onWithdraw, modifier = Modifier.fillMaxWidth()) { Text("Retirar dinero") }
+            OutlinedButton(onClick = onToggleFeatured, modifier = Modifier.fillMaxWidth()) {
+                Text(if (featured) "Quitar de destacada" else "Destacar esta meta")
+            }
             OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()) { Text("Editar meta") }
             OutlinedButton(
                 onClick = onDelete,
@@ -172,13 +178,14 @@ fun GoalFormSheet(
 @Composable
 fun MoveOptionsSheet(
     move: Move,
+    hide: Boolean = false,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     BaseSheet(
         title = if (move.withdraw) "Retiro" else "Aporte",
-        subtitle = "${money(move.amount)} · ${fmtDate(move.ts)}",
+        subtitle = "${money(move.amount, hide)} · ${fmtDate(move.ts)}",
         onDismiss = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

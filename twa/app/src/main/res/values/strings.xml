@@ -39,4 +39,8 @@
     }]
     
   </string>  
+   <string name="shortcut_goal_short">Nueva meta</string>
+   <string name="shortcut_goal_long">Crear una meta de ahorro</string>
+   <string name="shortcut_deposit_short">Añadir dinero</string>
+   <string name="shortcut_deposit_long">Aportar a una meta</string>
 </resources>

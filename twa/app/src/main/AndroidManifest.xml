@@ -31,10 +31,22 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".AhorrosWidget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:label="@string/launcherName"
             android:exported="true"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|uiMode|keyboard|keyboardHidden"
             android:windowSoftInputMode="adjustResize|stateHidden">
@@ -42,6 +54,9 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
     </application>
 </manifest>

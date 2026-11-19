@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -48,6 +49,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -68,6 +71,12 @@ private sealed interface SheetState {
 }
 
 private data class ConfirmState(val title: String, val text: String, val action: () -> Unit)
+
+private fun shortcutAction(intent: Intent?): String? = when (intent?.action) {
+    "com.jesusjk0915.ahorro.NEW_GOAL" -> "new_goal"
+    "com.jesusjk0915.ahorro.DEPOSIT" -> "deposit"
+    else -> null
+}
 
 /**
  * Gesto de la versión web: deslizar horizontal para cambiar de apartado.
@@ -92,7 +101,7 @@ private fun Modifier.swipeBetweenTabs(
             val dy = change.position.y - down.position.y
             if (abs(dx) >= 55f && abs(dx) >= abs(dy) * 1.4f) {
                 val next = tab + if (dx > 0f) -1 else 1
-                if (next in 0..2) onTab(next)
+                if (next in 0..3) onTab(next)
                 break
             }
         }
@@ -102,6 +111,7 @@ private fun Modifier.swipeBetweenTabs(
 class MainActivity : FragmentActivity() {
     private val vm: AppViewModel by viewModels()
     private var downloadReceiver: BroadcastReceiver? = null
+    private var shortcut by mutableStateOf<String?>(null)
 
     /** Evita que el prompt del sistema dispare un segundo bloqueo al volver del background. */
     private var authInProgress = false
@@ -118,6 +128,7 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         registerDownloadReceiver()
         handleInstallIntent(intent)
+        shortcut = shortcutAction(intent)
 
         val deviceLockAvailable = BiometricManager.from(this).canAuthenticate(
             BiometricManager.Authenticators.BIOMETRIC_WEAK or
@@ -162,6 +173,8 @@ class MainActivity : FragmentActivity() {
                             },
                             onLockNow = { lockedState.value = true },
                             deviceLockAvailable = deviceLockAvailable,
+                            shortcut = shortcut,
+                            onShortcutConsumed = { shortcut = null },
                         )
                     }
                     if (!locked && welcomeState.value) {
@@ -255,6 +268,12 @@ class MainActivity : FragmentActivity() {
         downloadReceiver = receiver
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleInstallIntent(intent)
+        shortcut = shortcutAction(intent)
+    }
+
     override fun onDestroy() {
         downloadReceiver?.let {
             try {
@@ -274,12 +293,26 @@ private fun AppContent(
     onTestDevice: (onOk: () -> Unit) -> Unit,
     onLockNow: () -> Unit,
     deviceLockAvailable: Boolean,
+    shortcut: String?,
+    onShortcutConsumed: () -> Unit,
 ) {
     var tab by remember { mutableIntStateOf(0) }
     var sheet by remember { mutableStateOf<SheetState?>(null) }
     var confirm by remember { mutableStateOf<ConfirmState?>(null) }
     var celebrate by remember { mutableStateOf<String?>(null) }
     val cs = MaterialTheme.colorScheme
+    val haptic = LocalHapticFeedback.current
+
+    // Atajos del ícono: abren directamente la hoja correspondiente.
+    LaunchedEffect(shortcut) {
+        val action = shortcut ?: return@LaunchedEffect
+        sheet = when (action) {
+            "new_goal" -> SheetState.NewGoal
+            "deposit" -> vm.ui.goals.firstOrNull()?.let { SheetState.Deposit(it) } ?: SheetState.NewGoal
+            else -> null
+        }
+        onShortcutConsumed()
+    }
 
     // Entrada elástica al abrir la app (rebote tipo iOS, sin AnimatedContent).
     val enterAnim = remember { Animatable(0f) }
@@ -387,7 +420,8 @@ private fun AppContent(
                     onGoalClick = { sheet = SheetState.GoalOptions(it) },
                 )
                 1 -> HistoryScreen(vm = vm, onMoveClick = { sheet = SheetState.MoveOptions(it) })
-                2 -> SettingsScreen(
+                2 -> AchievementsScreen(vm = vm)
+                3 -> SettingsScreen(
                     vm = vm,
                     deviceLockAvailable = deviceLockAvailable,
                     onTestDevice = onTestDevice,
@@ -401,6 +435,15 @@ private fun AppContent(
         }
         celebrate?.let { name ->
             GoalCelebration(name = name) { celebrate = null }
+        }
+        if (vm.canUndoDelete && celebrate == null) {
+            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 92.dp)) {
+                Button(
+                    onClick = { vm.undoDelete(); onToast("Eliminación deshecha") },
+                ) {
+                    Text("Deshacer eliminación")
+                }
+            }
         }
     }
 
@@ -417,6 +460,14 @@ private fun AppContent(
         )
         is SheetState.GoalOptions -> GoalOptionsSheet(
             goal = s.goal,
+            featured = vm.ui.settings.featuredGoalId == s.goal.id,
+            hide = vm.ui.settings.hideAmounts,
+            onToggleFeatured = {
+                val already = vm.ui.settings.featuredGoalId == s.goal.id
+                vm.setFeaturedGoal(if (already) "" else s.goal.id)
+                sheet = null
+                onToast(if (already) "Meta destacada quitada" else "Meta destacada")
+            },
             onDismiss = { sheet = null },
             onDeposit = { sheet = SheetState.Deposit(s.goal) },
             onWithdraw = { sheet = SheetState.Withdraw(s.goal) },
@@ -436,6 +487,7 @@ private fun AppContent(
                 val before = s.goal
                 vm.deposit(before.id, amount)
                 sheet = null
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 val after = vm.ui.goals.firstOrNull { it.id == before.id }
                 if (before.saved < before.target && after != null && after.saved >= after.target) {
                     celebrate = after.name
@@ -455,6 +507,7 @@ private fun AppContent(
         )
         is SheetState.MoveOptions -> MoveOptionsSheet(
             move = s.move,
+            hide = vm.ui.settings.hideAmounts,
             onDismiss = { sheet = null },
             onEdit = { sheet = SheetState.EditMove(s.move) },
             onDelete = {

@@ -80,6 +80,8 @@ class Store(private val context: Context) {
                 pinHash = so.optString("pinHash", ""),
                 patternHash = so.optString("patternHash", ""),
                 statsResetAt = so.optLong("statsResetAt", 0L),
+                featuredGoalId = so.optString("featuredGoalId", ""),
+                hideAmounts = so.optBoolean("hideAmounts", false),
             )
             AppState(goals = goals, moves = moves, settings = settings)
         } catch (e: Exception) {
@@ -121,8 +123,11 @@ class Store(private val context: Context) {
                     .put("pinHash", st.pinHash)
                     .put("patternHash", st.patternHash)
                     .put("statsResetAt", st.statsResetAt)
+                    .put("featuredGoalId", st.featuredGoalId)
+                    .put("hideAmounts", st.hideAmounts)
             )
             prefs.edit().putString(KEY_STATE, root.toString()).apply()
+            AhorrosWidget.refresh(context)
         } catch (e: Exception) {
             // Nunca debe romper la app por no poder guardar.
         }
@@ -139,6 +144,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private var backupMoves by mutableStateOf<List<Move>?>(null)
     val canUndoStatsReset: Boolean get() = backupMoves != null
+
+    private var lastDeletedGoal by mutableStateOf<Goal?>(null)
+    private var lastDeletedMove by mutableStateOf<Move?>(null)
+    val canUndoDelete: Boolean get() = lastDeletedGoal != null || lastDeletedMove != null
 
     /** Fuerza una recomposición para actualizar filtros de fecha. */
     fun refresh() {
@@ -180,7 +189,38 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteGoal(id: String) {
-        commit(ui.copy(goals = ui.goals.filterNot { it.id == id }))
+        val goal = ui.goals.firstOrNull { it.id == id } ?: return
+        lastDeletedGoal = goal
+        lastDeletedMove = null
+        commit(
+            ui.copy(
+                goals = ui.goals.filterNot { it.id == id },
+                settings = ui.settings.copy(
+                    featuredGoalId = if (ui.settings.featuredGoalId == id) "" else ui.settings.featuredGoalId,
+                ),
+            )
+        )
+    }
+
+    /** Restaura la última meta o el último movimiento borrado. */
+    fun undoDelete() {
+        lastDeletedGoal?.let { g ->
+            lastDeletedGoal = null
+            commit(ui.copy(goals = (listOf(g) + ui.goals).distinctBy { it.id }))
+            return
+        }
+        lastDeletedMove?.let { m ->
+            lastDeletedMove = null
+            val sign = if (m.withdraw) -1L else 1L
+            commit(
+                ui.copy(
+                    goals = ui.goals.map { g ->
+                        if (g.id == m.goalId) g.copy(saved = maxOf(0, g.saved + sign * m.amount)) else g
+                    },
+                    moves = (listOf(m) + ui.moves).distinctBy { it.id }.take(200),
+                )
+            )
+        }
     }
 
     fun deposit(id: String, amount: Long) {
@@ -234,6 +274,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteMove(id: String) {
         val m = ui.moves.firstOrNull { it.id == id } ?: return
+        lastDeletedMove = m
+        lastDeletedGoal = null
         val sign = if (m.withdraw) 1L else -1L
         commit(
             ui.copy(
@@ -253,6 +295,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         commit(ui.copy(settings = ui.settings.copy(glassTransparency = v.coerceIn(0, 100))))
     fun setGlassStyle(v: String) = commit(ui.copy(settings = ui.settings.copy(glassStyle = v)))
     fun setHideDockLabels(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(hideDockLabels = v)))
+    fun setFeaturedGoal(id: String) = commit(ui.copy(settings = ui.settings.copy(featuredGoalId = id)))
+    fun setHideAmounts(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(hideAmounts = v)))
     fun setSecurity(method: String) = commit(ui.copy(settings = ui.settings.copy(security = method)))
     fun setPin(pin: String) = commit(ui.copy(settings = ui.settings.copy(pinHash = lockHash(pin))))
     fun setPattern(seq: List<Int>) = commit(

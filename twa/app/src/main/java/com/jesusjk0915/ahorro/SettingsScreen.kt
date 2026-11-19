@@ -1,5 +1,7 @@
 package com.jesusjk0915.ahorro
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import java.io.File
 
 @Composable
 fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
@@ -134,6 +138,7 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(6.dp))
                 }
+                SwitchRow("Ocultar montos", settings.hideAmounts) { vm.setHideAmounts(it) }
                 SwitchRow("Quitar nombres de el dock", settings.hideDockLabels) {
                     vm.setHideDockLabels(it)
                 }
@@ -184,6 +189,33 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (vm.canUndoDelete) {
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            vm.undoDelete()
+                            onToast("Eliminación deshecha")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Deshacer última eliminación")
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Text("Historial en CSV", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Comparte tus movimientos con otra app. No se sube a ningún servidor.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = { exportCsv(context, vm.ui.moves, onToast) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Exportar y compartir CSV")
                 }
             }
         }
@@ -360,5 +392,30 @@ private fun SecurityOption(label: String, selected: Boolean, onClick: () -> Unit
         if (selected) {
             Icon(Icons.Default.Check, contentDescription = "Seleccionado", tint = MaterialTheme.colorScheme.primary)
         }
+    }
+}
+
+/** Genera el CSV en el almacenamiento privado y lo comparte con FileProvider (sin red). */
+private fun exportCsv(context: Context, moves: List<Move>, onToast: (String) -> Unit) {
+    try {
+        val sb = StringBuilder("fecha;tipo;meta;monto\n")
+        moves.sortedBy { it.ts }.forEach { m ->
+            val name = m.name.replace("\"", "\"\"").replace(";", ",")
+            sb.append(csvDate(m.ts)).append(';')
+                .append(if (m.withdraw) "retiro" else "aporte").append(';')
+                .append('"').append(name).append('"').append(';')
+                .append(m.amount).append('\n')
+        }
+        val file = File(context.filesDir, "ahorro_movimientos.csv")
+        file.writeText(sb.toString(), Charsets.UTF_8)
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(send, "Compartir historial"))
+    } catch (e: Exception) {
+        onToast("No se pudo exportar el historial")
     }
 }

@@ -30,10 +30,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -125,9 +128,19 @@ fun HomeScreen(
     onGoalClick: (Goal) -> Unit,
 ) {
     val state = vm.ui
+    val settings = state.settings
+    val goals = state.goals.sortedByDescending { it.id == settings.featuredGoalId }
     val totalSaved = state.goals.sumOf { it.saved }
     val totalTarget = state.goals.sumOf { it.target }
     val globalPct = if (totalTarget > 0) (totalSaved.toFloat() / totalTarget * 100f).coerceIn(0f, 100f) else 0f
+    val animatedPct by animateFloatAsState(
+        targetValue = globalPct,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "heroPct",
+    )
     val onHero = MaterialTheme.colorScheme.onPrimaryContainer
     val heroGlowAnim = rememberInfiniteTransition(label = "heroGlow")
     val heroGlow by heroGlowAnim.animateFloat(
@@ -216,23 +229,33 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold,
                             color = onHero.copy(alpha = 0.78f),
                         )
-                        Box(
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.28f), RoundedCornerShape(50)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                "${globalPct.toInt()}%",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = onHero,
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { vm.setHideAmounts(!settings.hideAmounts) }) {
+                                Icon(
+                                    if (settings.hideAmounts) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = if (settings.hideAmounts) "Mostrar montos" else "Ocultar montos",
+                                    tint = onHero,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.28f), RoundedCornerShape(50)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "${animatedPct.toInt()}%",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = onHero,
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        money(totalSaved),
+                        money(totalSaved, settings.hideAmounts),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = onHero,
@@ -251,7 +274,7 @@ fun HomeScreen(
                             color = onHero.copy(alpha = 0.8f),
                         )
                         Text(
-                            "de ${money(totalTarget)}",
+                            "de ${money(totalTarget, settings.hideAmounts)}",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = onHero.copy(alpha = 0.8f),
@@ -262,7 +285,7 @@ fun HomeScreen(
         }
 
         Spacer(Modifier.height(18.dp))
-        StatsCard(vm = vm)
+        StatsCard(vm = vm, hide = settings.hideAmounts)
         Spacer(Modifier.height(18.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -303,8 +326,13 @@ fun HomeScreen(
                 }
             }
         } else {
-            state.goals.forEach { g ->
-                GoalCard(g = g, onClick = { onGoalClick(g) })
+            goals.forEach { g ->
+                GoalCard(
+                    g = g,
+                    hide = settings.hideAmounts,
+                    featured = g.id == settings.featuredGoalId,
+                    onClick = { onGoalClick(g) },
+                )
                 Spacer(Modifier.height(10.dp))
             }
         }
@@ -313,7 +341,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun GoalCard(g: Goal, onClick: () -> Unit) {
+private fun GoalCard(g: Goal, hide: Boolean = false, featured: Boolean = false, onClick: () -> Unit) {
     val color = tintAt(g.tint)
     val p = pct(g)
     var shown by remember { mutableStateOf(false) }
@@ -350,9 +378,20 @@ private fun GoalCard(g: Goal, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(g.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        g.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (featured) {
+                        Spacer(Modifier.width(6.dp))
+                        Text("★", style = MaterialTheme.typography.titleMedium, color = color)
+                    }
+                }
                 Text(
-                    "${money(g.saved)} de ${money(g.target)}",
+                    "${money(g.saved, hide)} de ${money(g.target, hide)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -371,9 +410,11 @@ private fun GoalCard(g: Goal, onClick: () -> Unit) {
 }
 
 @Composable
-private fun StatsCard(vm: AppViewModel) {
+private fun StatsCard(vm: AppViewModel, hide: Boolean = false) {
     val moves = vm.ui.moves
     val completed = vm.ui.goals.count { it.target > 0 && it.saved >= it.target }
+    val streak = savingsStreak(moves)
+    var selectedDay by remember { mutableStateOf<Int?>(null) }
     val key = monthKey(System.currentTimeMillis())
     val inMes = moves.filter { !it.withdraw && monthKey(it.ts) == key }
     val outMes = moves.filter { it.withdraw && monthKey(it.ts) == key }
@@ -401,8 +442,8 @@ private fun StatsCard(vm: AppViewModel) {
             }
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatBox("Ahorrado", money(inMes.sumOf { it.amount }), Modifier.weight(1f))
-                StatBox("Retirado", money(outMes.sumOf { it.amount }), Modifier.weight(1f))
+                StatBox("Ahorrado", money(inMes.sumOf { it.amount }, hide), Modifier.weight(1f))
+                StatBox("Retirado", money(outMes.sumOf { it.amount }, hide), Modifier.weight(1f))
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -412,13 +453,19 @@ private fun StatsCard(vm: AppViewModel) {
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatBox("Metas cumplidas", "$completed", Modifier.weight(1f))
+                StatBox("Racha", "$streak días", Modifier.weight(1f))
             }
             Spacer(Modifier.height(18.dp))
             Text("Últimos 7 días", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                buckets.forEach { b ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                buckets.forEachIndexed { idx, b ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            selectedDay = if (selectedDay == idx) null else idx
+                        },
+                    ) {
                         val targetH = (abs(b.net).toFloat() / maxNet.toFloat() * 60f).dp.coerceAtLeast(3.dp)
                         val h by animateDpAsState(targetH, spring(
                             dampingRatio = Spring.DampingRatioLowBouncy,
@@ -426,7 +473,14 @@ private fun StatsCard(vm: AppViewModel) {
                         ), label = "bar${b.label}")
                         val barColor = if (b.net < 0) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.primary
-                        Box(Modifier.height(64.dp), contentAlignment = Alignment.BottomCenter) {
+                        Box(
+                            Modifier
+                                .height(64.dp)
+                                .graphicsLayer {
+                                    alpha = if (selectedDay == null || selectedDay == idx) 1f else 0.4f
+                                },
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
                             Box(
                                 Modifier
                                     .width(16.dp)
@@ -447,10 +501,19 @@ private fun StatsCard(vm: AppViewModel) {
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(b.label, style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (selectedDay == idx) FontWeight.ExtraBold else FontWeight.Normal)
                     }
                 }
             }
+            val chosen = selectedDay?.let { buckets.getOrNull(it) }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (chosen == null) "Toca una barra para ver el detalle del día"
+                else "${chosen.label}: ${money(chosen.net, hide)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(18.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Aportes del mes", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))

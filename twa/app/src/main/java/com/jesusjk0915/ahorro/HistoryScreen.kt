@@ -95,6 +95,7 @@ fun DropdownField(label: String, options: List<String>, selected: String, onSele
 @Composable
 fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
     val state = vm.ui
+    val hide = state.settings.hideAmounts
     var goalLabel by remember { mutableStateOf("Todas las metas") }
     var period by remember { mutableStateOf("Todo el tiempo") }
 
@@ -167,7 +168,7 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
         } else {
             LazyColumn(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
                 items(moves, key = { it.id }) { m ->
-                    MoveRow(m, onMoveClick)
+                    MoveRow(m, hide, onMoveClick)
                 }
             }
         }
@@ -176,7 +177,7 @@ fun HistoryScreen(vm: AppViewModel, onMoveClick: (Move) -> Unit) {
 }
 
 @Composable
-private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
+private fun MoveRow(m: Move, hide: Boolean = false, onClick: (Move) -> Unit) {
     val color = if (m.withdraw) MaterialTheme.colorScheme.error else tintAt(m.tint)
     var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { shown = true }
@@ -239,7 +240,7 @@ private fun MoveRow(m: Move, onClick: (Move) -> Unit) {
                 )
             }
             Text(
-                "${if (m.withdraw) "-" else "+"}${money(m.amount)}",
+                "${if (m.withdraw) "-" else "+"}${money(m.amount, hide)}",
                 style = MaterialTheme.typography.titleSmall,
                 color = color,
             )

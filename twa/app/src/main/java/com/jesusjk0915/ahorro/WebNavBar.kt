@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -121,9 +122,9 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
     )
 
     // Medimos cada botón como hacía placeIndicator(): left = offsetLeft, width = offsetWidth.
-    val xs = remember { mutableStateListOf(0.dp, 0.dp, 0.dp) }
-    val ws = remember { mutableStateListOf(0.dp, 0.dp, 0.dp) }
-    val hs = remember { mutableStateListOf(0.dp, 0.dp, 0.dp) }
+    val xs = remember { mutableStateListOf(0.dp, 0.dp, 0.dp, 0.dp) }
+    val ws = remember { mutableStateListOf(0.dp, 0.dp, 0.dp, 0.dp) }
+    val hs = remember { mutableStateListOf(0.dp, 0.dp, 0.dp, 0.dp) }
 
     val indicatorX by animateDpAsState(
         targetValue = xs[tab],
@@ -136,8 +137,11 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
         label = "indicatorW",
     )
 
-    val labels = listOf("Metas", "Historial", "Ajustes")
+    val labels = listOf("Metas", "Historial", "Logros", "Ajustes")
     val iconSize = if (settings.hideDockLabels) 28.dp else 20.dp
+    // El difuminado sigue el slider de transparencia del cristal líquido.
+    val glassBlur = (6 + settings.glassTransparency * 18 / 100).dp
+    val fogAlpha = 0.10f + settings.glassTransparency / 100f * 0.22f
 
     Box(
         modifier = Modifier.fillMaxWidth().padding(bottom = 22.dp),
@@ -237,15 +241,15 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                         .background(
                             Brush.linearGradient(
                                 listOf(
-                                    Color.White.copy(alpha = 0.22f),
-                                    cs.primary.copy(alpha = 0.20f),
-                                    cs.tertiary.copy(alpha = 0.14f),
+                                    Color.White.copy(alpha = fogAlpha),
+                                    cs.primary.copy(alpha = fogAlpha * 0.9f),
+                                    cs.tertiary.copy(alpha = fogAlpha * 0.65f),
                                     Color.Transparent,
                                 ),
                             ),
                             RoundedCornerShape(50),
                         )
-                        .blur(18.dp)
+                        .blur(glassBlur)
                         .clip(RoundedCornerShape(50)),
                 )
             }
@@ -319,6 +323,12 @@ fun WebNavBar(settings: Settings, tab: Int, onTab: (Int) -> Unit) {
                             when (index) {
                                 0 -> TargetIcon(tint, iconSize)
                                 1 -> ListIcon(tint, iconSize)
+                                2 -> Icon(
+                                    Icons.Default.EmojiEvents,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(iconSize),
+                                    tint = tint,
+                                )
                                 else -> Icon(
                                     Icons.Default.Settings,
                                     contentDescription = null,
