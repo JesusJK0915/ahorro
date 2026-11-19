@@ -21,7 +21,6 @@ data class Move(
 )
 
 data class Settings(
-    val ringMode: Boolean = true,
     val dynamicColor: Boolean = true,
     val glass: Boolean = false,
     val glassTransparency: Int = 60, // 0 = casi sólido, 100 = muy translúcido

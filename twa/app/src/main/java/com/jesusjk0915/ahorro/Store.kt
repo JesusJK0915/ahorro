@@ -71,7 +71,6 @@ class Store(private val context: Context) {
             }
             val so = root.optJSONObject("settings") ?: JSONObject()
             val settings = Settings(
-                ringMode = so.optBoolean("ringMode", true),
                 dynamicColor = so.optBoolean("dynamicColor", true),
                 glass = so.optBoolean("glass", false),
                 glassTransparency = so.optInt("glassTransparency", 60),
@@ -112,7 +111,6 @@ class Store(private val context: Context) {
             root.put(
                 "settings",
                 JSONObject()
-                    .put("ringMode", st.ringMode)
                     .put("dynamicColor", st.dynamicColor)
                     .put("glass", st.glass)
                     .put("glassTransparency", st.glassTransparency)
@@ -244,7 +242,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun setRingMode(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(ringMode = v)))
     fun setDynamicColor(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(dynamicColor = v)))
     fun setGlass(v: Boolean) = commit(ui.copy(settings = ui.settings.copy(glass = v)))
     fun setGlassTransparency(v: Int) =

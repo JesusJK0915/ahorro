@@ -90,7 +90,6 @@ fun SettingsScreen(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                SwitchRow("Progreso circular", settings.ringMode) { vm.setRingMode(it) }
                 SwitchRow("Colores del fondo de pantalla", settings.dynamicColor) { vm.setDynamicColor(it) }
                 SwitchRow("Cristal líquido", settings.glass) { vm.setGlass(it) }
                 if (settings.glass) {

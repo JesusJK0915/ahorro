@@ -46,8 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.sin
 import androidx.compose.ui.graphics.Brush
@@ -64,48 +62,6 @@ import kotlin.math.abs
 
 private fun pct(g: Goal): Float =
     if (g.target > 0) ((g.saved.toFloat() / g.target.toFloat()) * 100f).coerceIn(0f, 100f) else 0f
-
-@Composable
-private fun ProgressRing(value: Float, color: Color, size: Int = 92) {
-    val track = MaterialTheme.colorScheme.surfaceVariant
-    val fill by animateFloatAsState(
-        targetValue = value,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "ringFill",
-    )
-    Canvas(Modifier.size(size.dp)) {
-        val stroke = 10f * density
-        drawArc(color = track, startAngle = 0f, sweepAngle = 360f, useCenter = false, style = Stroke(stroke))
-        drawArc(
-            color = color, startAngle = -90f, sweepAngle = 3.6f * fill,
-            useCenter = false, style = Stroke(stroke, cap = StrokeCap.Round),
-        )
-    }
-}
-
-@Composable
-private fun ProgressLine(value: Float, color: Color) {
-    val track = MaterialTheme.colorScheme.surfaceVariant
-    val fill by animateFloatAsState(
-        targetValue = value,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow,
-        ),
-        label = "lineFill",
-    )
-    Canvas(Modifier.fillMaxWidth().height(12.dp)) {
-        val radius = CornerRadius(6f * density)
-        drawRoundRect(color = track, size = Size(size.width, size.height), cornerRadius = radius)
-        val w = size.width * (fill / 100f)
-        if (w > 0f) {
-            drawRoundRect(color = color, size = Size(w, size.height), cornerRadius = radius)
-        }
-    }
-}
 
 /**
  * Ola del hero, igual a la versión web: un rastro continuo y un tramo lleno
@@ -281,25 +237,8 @@ fun HomeScreen(
                         fontWeight = FontWeight.ExtraBold,
                         color = onHero,
                     )
-                    if (state.settings.ringMode) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                ProgressRing(globalPct, onHero, 180)
-                                Text(
-                                    "${globalPct.toInt()}%",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = onHero,
-                                )
-                            }
-                        }
-                    } else {
-                        Spacer(Modifier.height(14.dp))
-                        WaveProgress(globalPct, onHero)
-                    }
+                    Spacer(Modifier.height(14.dp))
+                    WaveProgress(globalPct, onHero)
                     Spacer(Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -365,7 +304,7 @@ fun HomeScreen(
             }
         } else {
             state.goals.forEach { g ->
-                GoalCard(g = g, ring = state.settings.ringMode, onClick = { onGoalClick(g) })
+                GoalCard(g = g, onClick = { onGoalClick(g) })
                 Spacer(Modifier.height(10.dp))
             }
         }
@@ -374,7 +313,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
+private fun GoalCard(g: Goal, onClick: () -> Unit) {
     val color = tintAt(g.tint)
     val p = pct(g)
     var shown by remember { mutableStateOf(false) }
@@ -410,13 +349,6 @@ private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
         ),
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (ring) {
-                Box(contentAlignment = Alignment.Center) {
-                    ProgressRing(p, color, 56)
-                    Text("${p.toInt()}%", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.width(14.dp))
-            }
             Column(Modifier.weight(1f)) {
                 Text(g.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(
@@ -424,14 +356,16 @@ private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (!ring) {
-                    Spacer(Modifier.height(8.dp))
-                    ProgressLine(p, color)
-                }
+                Spacer(Modifier.height(10.dp))
+                WaveProgress(p, color)
             }
-            if (ring) {
-                Text("${p.toInt()}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
-            }
+            Spacer(Modifier.width(12.dp))
+            Text(
+                "${p.toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = color,
+            )
         }
     }
 }
@@ -439,6 +373,7 @@ private fun GoalCard(g: Goal, ring: Boolean, onClick: () -> Unit) {
 @Composable
 private fun StatsCard(vm: AppViewModel) {
     val moves = vm.ui.moves
+    val completed = vm.ui.goals.count { it.target > 0 && it.saved >= it.target }
     val key = monthKey(System.currentTimeMillis())
     val inMes = moves.filter { !it.withdraw && monthKey(it.ts) == key }
     val outMes = moves.filter { it.withdraw && monthKey(it.ts) == key }
@@ -473,6 +408,10 @@ private fun StatsCard(vm: AppViewModel) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatBox("Aportes", "${inMes.size}", Modifier.weight(1f))
                 StatBox("Retiros", "${outMes.size}", Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatBox("Metas cumplidas", "$completed", Modifier.weight(1f))
             }
             Spacer(Modifier.height(18.dp))
             Text("Últimos 7 días", style = MaterialTheme.typography.labelLarge)
